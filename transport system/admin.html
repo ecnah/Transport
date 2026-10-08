@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard | CYROO TOURS & SAFARI</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Supabase JS Client SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- html2pdf for Invoice Export -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body style="background:#f4f6f8;">
+
+  <!-- Toast Notification Container for Realtime Updates -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- ==================== ADMIN LOGIN SECTION ==================== -->
+  <div id="adminLoginSection"
+    style="min-height:100vh; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg, rgba(8, 28, 21, 0.85) 0%, rgba(5, 20, 14, 0.95) 100%), url('assets/background 1 .png') center/cover no-repeat; padding:1.5rem;">
+    <div
+      style="background:#fff; width:100%; max-width:440px; padding:2.5rem; border-radius:var(--radius-md); box-shadow:var(--shadow-lg); text-align:center; border-top:5px solid var(--gold-accent);">
+      <img src="assets/1-removebg-preview.png" alt="CYROO TOURS & SAFARI" style="height:115px; margin-bottom:1rem;">
+      <p
+        style="color:var(--gold-accent); font-weight:700; font-size:0.85rem; letter-spacing:2px; margin-bottom:1.75rem;">
+        ADMIN MANAGEMENT PORTAL</p>
+
+      <form id="adminLoginForm">
+        <div class="form-group" style="text-align:left;">
+          <label class="form-label" for="adminEmail">Email Address</label>
+          <input type="email" id="adminEmail" class="form-control" value="cyrootourssafari@gmail.com" required>
+        </div>
+        <div class="form-group" style="text-align:left;">
+          <label class="form-label" for="adminPassword">Password</label>
+          <input type="password" id="adminPassword" class="form-control" value="admin123" required>
+        </div>
+        <button type="submit" class="btn btn-gold" style="width:100%; margin-top:1rem;"><i
+            class="fas fa-sign-in-alt"></i> Login to Dashboard</button>
+      </form>
+      <p style="font-size:0.8rem; color:#888; margin-top:1.5rem;">Demo Admin Credentials pre-filled for instant testing.
+      </p>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN ADMIN DASHBOARD LAYOUT ==================== -->
+  <div id="adminMainSection" class="admin-layout" style="display:none;">
+    
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div class="admin-sidebar-overlay" id="adminSidebarOverlay" onclick="closeAdminMobileSidebar()"></div>
+
+    <!-- Sidebar Navigation -->
+    <aside class="admin-sidebar">
+      <div class="admin-sidebar-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <img src="assets/1-removebg-preview.png" alt="CYROO SAFARI" style="height:55px;">
+        <button class="admin-sidebar-close" onclick="closeAdminMobileSidebar()" aria-label="Close Sidebar">&times;</button>
+      </div>
+
+      <nav class="admin-menu">
+        <div class="admin-menu-item active" data-tab="dashboard">
+          <i class="fas fa-chart-line"></i> <span>Dashboard</span>
+        </div>
+        <div class="admin-menu-item" data-tab="safari-bookings">
+          <i class="fas fa-paw"></i> <span>Safari Bookings</span>
+        </div>
+        <div class="admin-menu-item" data-tab="airport-bookings">
+          <i class="fas fa-plane-arrival"></i> <span>Airport Transfers</span>
+        </div>
+        <div class="admin-menu-item" data-tab="users">
+          <i class="fas fa-users-cog"></i> <span>User Management</span>
+        </div>
+        <div class="admin-menu-item" data-tab="safari-packages">
+          <i class="fas fa-paw"></i> <span>Safari Packages</span>
+        </div>
+        <div class="admin-menu-item" data-tab="airport-packages">
+          <i class="fas fa-plane"></i> <span>Airport Packages</span>
+        </div>
+        <div class="admin-menu-item" data-tab="destinations">
+          <i class="fas fa-compass"></i> <span>Destinations Catalog</span>
+        </div>
+        <div class="admin-menu-item" data-tab="payments">
+          <i class="fas fa-money-bill-wave"></i> <span>Payments</span>
+        </div>
+        <div class="admin-menu-item" data-tab="messages">
+          <i class="fas fa-envelope"></i> <span>Messages</span>
+        </div>
+      </nav>
+
+      <div class="admin-sidebar-footer">
+        <button class="btn btn-outline-gold btn-sm" style="width:100%; color:#fff; border-color:rgba(255,255,255,0.3);"
+          onclick="adminLogout()">
+          <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="admin-main">
+
+      <!-- Topbar -->
+      <div class="admin-topbar">
+        <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+          <button id="adminMobileToggle" class="btn btn-gold btn-sm admin-mobile-toggle" onclick="toggleAdminMobileSidebar()">
+            <i class="fas fa-bars"></i> Menu
+          </button>
+          <div>
+            <h2 style="font-size:1.4rem; color:var(--primary-green-dark); margin:0;">Cyroo Tours Management</h2>
+            <span style="font-size:0.85rem; color:#666;"><i class="fas fa-circle text-success"
+                style="font-size:0.6rem;"></i> Supabase Realtime Active</span>
+          </div>
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;" class="admin-topbar-actions">
+          <a href="index.html" target="_blank" class="btn btn-outline-gold btn-sm"><i
+              class="fas fa-external-link-alt"></i> View Website</a>
+          <button class="btn btn-green btn-sm" onclick="refreshAdminData()"><i class="fas fa-sync"></i> Refresh
+            Data</button>
+        </div>
+      </div>
+
+      <!-- VIEW 1: DASHBOARD STATS & OVERVIEW -->
+      <div id="adminView_dashboard" class="admin-view">
+        <div class="admin-stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon green"><i class="fas fa-paw"></i></div>
+            <div>
+              <div class="stat-val" id="statSafariBookings">0</div>
+              <div class="stat-lbl">Safari Bookings</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon gold"><i class="fas fa-plane-arrival"></i></div>
+            <div>
+              <div class="stat-val" id="statAirportBookings">0</div>
+              <div class="stat-lbl">Airport Transfers</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+            <div>
+              <div class="stat-val" id="statTotalUsers">0</div>
+              <div class="stat-lbl">Registered Guests/Admins</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon gold"><i class="fas fa-clock"></i></div>
+            <div>
+              <div class="stat-val" id="statPendingBookings">0</div>
+              <div class="stat-lbl">Pending Review</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon green"><i class="fas fa-coins"></i></div>
+            <div>
+              <div class="stat-val" id="statTotalRevenue">KES 0</div>
+              <div class="stat-lbl">Total Revenue Collected</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon red"><i class="fas fa-exclamation-circle"></i></div>
+            <div>
+              <div class="stat-val" id="statOutstandingBalance">KES 0</div>
+              <div class="stat-lbl">Outstanding Balance</div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          style="background:#fff; padding:2rem; border-radius:var(--radius-md); box-shadow:var(--shadow-sm); margin-bottom:2rem;">
+          <h3 style="margin-bottom:1.5rem; color:var(--primary-green-dark);"><i class="fas fa-chart-bar text-gold"></i>
+            Bookings & Transfers Overview</h3>
+          <div style="max-height:350px;">
+            <canvas id="adminRevenueChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 2: SAFARI BOOKINGS TABLE -->
+      <div id="adminView_safari-bookings" class="admin-view" style="display:none;">
+        <div class="data-table-container">
+          <div class="table-header-tools">
+            <h3 style="color:var(--primary-green-dark);"><i class="fas fa-paw text-gold"></i> Safari Package Bookings
+            </h3>
+
+            <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+              <input type="text" id="filterSafariSearch" class="form-control table-search"
+                placeholder="Search Ref or Name..." oninput="renderSafariBookingsTable()">
+              <select id="filterSafariStatus" class="form-select" style="width:160px;"
+                onchange="renderSafariBookingsTable()">
+                <option value="">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+              <select id="filterSafariPayment" class="form-select" style="width:160px;"
+                onchange="renderSafariBookingsTable()">
+                <option value="">All Payments</option>
+                <option value="Unpaid">Unpaid</option>
+                <option value="Partially Paid">Partially Paid</option>
+                <option value="Paid">Paid</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Booking Ref</th>
+                  <th>Customer</th>
+                  <th>Safari Package</th>
+                  <th>Travel Date</th>
+                  <th>Travelers</th>
+                  <th>Total (KES)</th>
+                  <th>Paid</th>
+                  <th>Balance</th>
+                  <th>Status</th>
+                  <th>Payment</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminSafariBookingsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 3: AIRPORT TRANSFERS TABLE -->
+      <div id="adminView_airport-bookings" class="admin-view" style="display:none;">
+        <div class="data-table-container">
+          <div class="table-header-tools">
+            <h3 style="color:var(--primary-green-dark);"><i class="fas fa-plane-arrival text-gold"></i> Airport Transfer
+              Bookings</h3>
+
+            <div style="display:flex; gap:1rem; flex-wrap:wrap;">
+              <input type="text" id="filterAirportSearch" class="form-control table-search"
+                placeholder="Search Ref or Guest..." oninput="renderAirportBookingsTable()">
+              <select id="filterAirportStatus" class="form-select" style="width:160px;"
+                onchange="renderAirportBookingsTable()">
+                <option value="">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="Cancelled">Cancelled</option>
+              </select>
+              <select id="filterAirportPayment" class="form-select" style="width:160px;"
+                onchange="renderAirportBookingsTable()">
+                <option value="">All Payments</option>
+                <option value="Unpaid">Unpaid</option>
+                <option value="Partially Paid">Partially Paid</option>
+                <option value="Paid">Paid</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Booking Ref</th>
+                  <th>Guest Name</th>
+                  <th>Contact Info</th>
+                  <th>Airport Transfer Service</th>
+                  <th>Travel Date</th>
+                  <th>Total (KES)</th>
+                  <th>Paid</th>
+                  <th>Balance</th>
+                  <th>Payment</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminAirportBookingsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 4: USER MANAGEMENT -->
+      <div id="adminView_users" class="admin-view" style="display:none;">
+        <div class="data-table-container">
+          <div class="table-header-tools">
+            <h3 style="color:var(--primary-green-dark);"><i class="fas fa-users-cog text-gold"></i> User Management
+              (Guests & System Admins)</h3>
+            <button class="btn btn-gold" onclick="adminOpenAddUserModal()"><i class="fas fa-user-plus"></i> Add New User
+              / Admin</button>
+          </div>
+
+          <div style="display:flex; gap:1rem; margin-bottom:1.5rem; flex-wrap:wrap;">
+            <input type="text" id="filterUserSearch" class="form-control table-search"
+              placeholder="Search Name, Email, Phone..." oninput="renderUsersTable()">
+            <select id="filterUserRole" class="form-select" style="width:180px;" onchange="renderUsersTable()">
+              <option value="">All Roles</option>
+              <option value="Customer">Customer</option>
+              <option value="Super Admin">Super Admin</option>
+            </select>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Full Name</th>
+                  <th>Email Address</th>
+                  <th>Phone Number</th>
+                  <th>Role</th>
+                  <th>Date Registered</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="adminUsersTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 5A: SAFARI PACKAGES MANAGEMENT -->
+      <div id="adminView_safari-packages" class="admin-view" style="display:none;">
+        <div
+          style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+          <div>
+            <h3 style="color:var(--primary-green-dark);"><i class="fas fa-paw text-gold"></i> Safari Packages Catalog
+            </h3>
+            <p style="color:#666; font-size:0.85rem; margin-top:0.2rem;">Manage national parks, game reserves, and
+              multi-day wilderness tour packages.</p>
+          </div>
+          <div style="display:flex; gap:0.75rem; align-items:center;">
+            <input type="text" id="filterSafariPkgSearch" class="form-control" style="width:200px;"
+              placeholder="Search Safari..." oninput="renderSafariPackagesGrid()">
+            <button class="btn btn-gold" onclick="adminOpenAddPackageModal('Safari Parks')"><i class="fas fa-plus"></i>
+              Add Safari Package</button>
+          </div>
+        </div>
+        <div class="packages-grid" id="adminSafariPackagesGrid"></div>
+      </div>
+
+      <!-- VIEW 5B: AIRPORT PACKAGES MANAGEMENT -->
+      <div id="adminView_airport-packages" class="admin-view" style="display:none;">
+        <div
+          style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+          <div>
+            <h3 style="color:var(--primary-green-dark);"><i class="fas fa-plane-arrival text-gold"></i> Airport Transfer
+              Packages Catalog</h3>
+            <p style="color:#666; font-size:0.85rem; margin-top:0.2rem;">Manage JKIA & Wilson Airport transfer services
+              and executive pickups.</p>
+          </div>
+          <div style="display:flex; gap:0.75rem; align-items:center;">
+            <input type="text" id="filterAirportPkgSearch" class="form-control" style="width:200px;"
+              placeholder="Search Airport..." oninput="renderAirportPackagesGrid()">
+            <button class="btn btn-gold" onclick="adminOpenAddPackageModal('Airport Services')"><i
+                class="fas fa-plus"></i> Add Airport Package</button>
+          </div>
+        </div>
+        <div class="packages-grid" id="adminAirportPackagesGrid"></div>
+      </div>
+
+      <!-- VIEW: DESTINATIONS CATALOG -->
+      <div id="adminView_destinations" class="admin-view" style="display:none;">
+        <div
+          style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; gap:1rem;">
+          <div>
+            <h3 style="color:var(--primary-green-dark);"><i class="fas fa-compass text-gold"></i> Safari Destinations
+              Catalog</h3>
+            <p style="color:#666; font-size:0.85rem; margin-top:0.2rem;">Manage destination biomes and easily select or
+              change images from the local assets folder.</p>
+          </div>
+          <div style="display:flex; gap:0.75rem; align-items:center;">
+            <input type="text" id="filterDestSearch" class="form-control" style="width:200px;"
+              placeholder="Search Destinations..." oninput="renderDestinationsGrid()">
+            <button class="btn btn-gold" onclick="adminOpenAddDestinationModal()"><i class="fas fa-plus"></i> Add
+              Destination</button>
+          </div>
+        </div>
+        <div class="packages-grid" id="adminDestinationsGrid"></div>
+      </div>
+
+      <!-- VIEW 6: PAYMENTS AUDIT LOG -->
+      <div id="adminView_payments" class="admin-view" style="display:none;">
+        <div class="data-table-container">
+          <h3 style="margin-bottom:1.5rem; color:var(--primary-green-dark);"><i class="fas fa-receipt"></i> Payment
+            Transactions</h3>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Tx Reference</th>
+                  <th>Booking Ref</th>
+                  <th>Customer</th>
+                  <th>Method</th>
+                  <th>Amount</th>
+                  <th>Payment Date</th>
+                </tr>
+              </thead>
+              <tbody id="adminPaymentsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- VIEW 7: MESSAGES LOG -->
+      <div id="adminView_messages" class="admin-view" style="display:none;">
+        <div class="data-table-container">
+          <h3 style="margin-bottom:1.5rem; color:var(--primary-green-dark);"><i class="fas fa-comments"></i> Guest
+            Inquiries</h3>
+          <div style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Guest Name</th>
+                  <th>Contact Info</th>
+                  <th>Message</th>
+                  <th>Received Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="adminMessagesTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- MODAL: ADD / EDIT USER -->
+  <div class="modal" id="adminUserModal">
+    <div class="modal-content" style="max-width:500px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-user-plus text-gold"></i> Add New User / System Admin</h3>
+        <button class="modal-close" onclick="closeModal('adminUserModal')">&times;</button>
+      </div>
+      <form onsubmit="adminSaveUser(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Full Name *</label>
+            <input type="text" id="userFormName" class="form-control" required placeholder="e.g. Sarah Jenkins">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address *</label>
+            <input type="email" id="userFormEmail" class="form-control" required placeholder="e.g. sarah@example.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number *</label>
+            <input type="tel" id="userFormPhone" class="form-control" required placeholder="e.g. 0722998877">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Role *</label>
+            <select id="userFormRole" class="form-select">
+              <option value="Customer">Customer / Guest</option>
+              <option value="Super Admin">Super Admin</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-gold" onclick="closeModal('adminUserModal')">Cancel</button>
+          <button type="submit" class="btn btn-gold"><i class="fas fa-save"></i> Save User</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: RECORD PAYMENT -->
+  <div class="modal" id="adminPaymentModal">
+    <div class="modal-content" style="max-width:500px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-cash-register text-gold"></i> Record Customer Payment</h3>
+        <button class="modal-close" onclick="closeModal('adminPaymentModal')">&times;</button>
+      </div>
+      <form onsubmit="adminSubmitPayment(event)">
+        <div class="modal-body">
+          <input type="hidden" id="payBookingId">
+          <div class="form-group">
+            <label class="form-label">Booking Reference</label>
+            <input type="text" id="payBookingRef" class="form-control" readonly style="background:#eee;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Customer Name</label>
+            <input type="text" id="payCustomerName" class="form-control" readonly style="background:#eee;">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payment Amount (KES) *</label>
+            <input type="number" id="payAmount" class="form-control" required min="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Payment Method *</label>
+            <select id="payMethod" class="form-select">
+              <option value="M-Pesa">M-Pesa Buy Goods / Paybill</option>
+              <option value="Bank Transfer">Bank Wire Transfer</option>
+              <option value="Cash">Cash at Office</option>
+              <option value="Credit Card">Credit / Debit Card</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Transaction Reference (e.g. M-Pesa Code)</label>
+            <input type="text" id="payTransRef" class="form-control" placeholder="e.g. QK8910XXXX">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-gold" onclick="closeModal('adminPaymentModal')">Cancel</button>
+          <button type="submit" class="btn btn-gold"><i class="fas fa-save"></i> Record Payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD/EDIT SAFARI PACKAGE -->
+  <div class="modal" id="adminPackageModal">
+    <div class="modal-content" style="max-width:650px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-edit text-gold"></i> Manage Safari Package</h3>
+        <button class="modal-close" onclick="closeModal('adminPackageModal')">&times;</button>
+      </div>
+      <form onsubmit="adminSavePackage(event)">
+        <div class="modal-body">
+          <input type="hidden" id="pkgFormId">
+          <div class="form-group">
+            <label class="form-label">Package Name *</label>
+            <input type="text" id="pkgFormName" class="form-control" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Destination *</label>
+              <select id="pkgFormDestination" class="form-select">
+                <option value="Maasai Mara National Reserve">Maasai Mara National Reserve</option>
+                <option value="Amboseli National Park">Amboseli National Park</option>
+                <option value="Tsavo East & West National Parks">Tsavo East & West National Parks</option>
+                <option value="Lake Nakuru National Park">Lake Nakuru National Park</option>
+                <option value="Mount Kenya National Park">Mount Kenya National Park</option>
+                <option value="Nairobi National Park">Nairobi National Park</option>
+                <option value="Nairobi JKIA Airport / Nairobi Hotels">JKIA & Wilson Airports</option>
+                <option value="Multi-Destination Tailor Made">Multi-Destination Custom</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category *</label>
+              <select id="pkgFormCategory" class="form-select">
+                <option value="Safari Parks">Safari Parks</option>
+                <option value="Mount Kenya">Mount Kenya</option>
+                <option value="Day Excursions">Day Excursions</option>
+                <option value="Airport Services">Airport Services</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Number of Days *</label>
+              <input type="number" id="pkgFormDays" class="form-control" min="1" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Price per Adult (KES) *</label>
+              <input type="number" id="pkgFormPrice" class="form-control" min="0" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Feature Image Path / URL *</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:0.5rem;">
+              <select id="pkgAssetPicker" class="form-select"
+                onchange="applyAssetImageToInput('pkgAssetPicker', 'pkgFormImg', 'pkgImgPreview')">
+                <option value="">📷 Quick Select from Assets Folder...</option>
+                <option value="assets/Amboseli National  (1).png">assets/Amboseli National (1).png (Amboseli Elephant Herd)</option>
+                <option value="assets/Amboseli National  (2).png">assets/Amboseli National (2).png (Amboseli Mt Kilimanjaro)</option>
+                <option value="assets/Amboseli National  (3).png">assets/Amboseli National (3).png (Amboseli Wildlife Park)</option>
+                <option value="assets/Amboseli National  (4).png">assets/Amboseli National (4).png (Amboseli Sunset Expedition)</option>
+                <option value="assets/Amboseli National  (5).png">assets/Amboseli National (5).png (Amboseli Safari Vehicle)</option>
+                <option value="assets/Amboseli National  (6).png">assets/Amboseli National (6).png (Amboseli Panorama)</option>
+                <option value="assets/download.jfif">assets/download.jfif (Maasai Mara / Wildlife)</option>
+                <option value="assets/download (1).jfif">assets/download (1).jfif (Amboseli / Elephants & Savannah)</option>
+                <option value="assets/download (2).jfif">assets/download (2).jfif (Tsavo / Airport Shuttle)</option>
+                <option value="assets/wallpaper , HD wallpaper , 4k wallpaper.jfif">assets/wallpaper.jfif (Lake Nakuru & Rift Valley)</option>
+                <option value="assets/1-removebg-preview.png">assets/1-removebg-preview.png (Logo)</option>
+              </select>
+              <input type="text" id="pkgFormImg" class="form-control" placeholder="assets/download.jfif" required
+                oninput="document.getElementById('pkgImgPreview').src=this.value">
+            </div>
+            <div
+              style="margin-top:0.5rem; height:120px; border-radius:6px; overflow:hidden; border:1px solid #ddd; background:#f5f5f5; display:flex; align-items:center; justify-content:center;">
+              <img id="pkgImgPreview" src="assets/download.jfif"
+                style="max-height:100%; max-width:100%; object-fit:cover;" onerror="this.src='assets/download.jfif'">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Package Description *</label>
+            <textarea id="pkgFormDesc" class="form-control" rows="3" required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-gold" onclick="closeModal('adminPackageModal')">Cancel</button>
+          <button type="submit" class="btn btn-gold"><i class="fas fa-save"></i> Save Package</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD/EDIT SAFARI DESTINATION -->
+  <div class="modal" id="adminDestinationModal">
+    <div class="modal-content" style="max-width:650px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-compass text-gold"></i> Manage Safari Destination</h3>
+        <button class="modal-close" onclick="closeModal('adminDestinationModal')">&times;</button>
+      </div>
+      <form onsubmit="adminSaveDestination(event)">
+        <div class="modal-body">
+          <input type="hidden" id="destFormId">
+          <div class="form-group">
+            <label class="form-label">Destination Name *</label>
+            <input type="text" id="destFormName" class="form-control" required
+              placeholder="e.g. Maasai Mara National Reserve">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Tagline / Subtitle *</label>
+              <input type="text" id="destFormTagline" class="form-control" required
+                placeholder="e.g. Home of the Wildebeest Migration">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Location / County *</label>
+              <input type="text" id="destFormLocation" class="form-control" required placeholder="e.g. Narok, Kenya">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Destination Image Path / URL *</label>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:0.5rem;">
+              <select id="destAssetPicker" class="form-select"
+                onchange="applyAssetImageToInput('destAssetPicker', 'destFormImg', 'destImgPreview')">
+                <option value="">📷 Quick Select from Assets Folder...</option>
+                <option value="assets/Amboseli National  (1).png">assets/Amboseli National (1).png (Amboseli Elephant Herd)</option>
+                <option value="assets/Amboseli National  (2).png">assets/Amboseli National (2).png (Amboseli Mt Kilimanjaro)</option>
+                <option value="assets/Amboseli National  (3).png">assets/Amboseli National (3).png (Amboseli Wildlife Park)</option>
+                <option value="assets/Amboseli National  (4).png">assets/Amboseli National (4).png (Amboseli Sunset Expedition)</option>
+                <option value="assets/Amboseli National  (5).png">assets/Amboseli National (5).png (Amboseli Safari Vehicle)</option>
+                <option value="assets/Amboseli National  (6).png">assets/Amboseli National (6).png (Amboseli Panorama)</option>
+                <option value="assets/download.jfif">assets/download.jfif (Maasai Mara / Wildlife)</option>
+                <option value="assets/download (1).jfif">assets/download (1).jfif (Amboseli / Elephants & Savannah)</option>
+                <option value="assets/download (2).jfif">assets/download (2).jfif (Tsavo / Airport Shuttle)</option>
+                <option value="assets/wallpaper , HD wallpaper , 4k wallpaper.jfif">assets/wallpaper.jfif (Lake Nakuru & Rift Valley)</option>
+                <option value="assets/1-removebg-preview.png">assets/1-removebg-preview.png (Logo)</option>
+              </select>
+              <input type="text" id="destFormImg" class="form-control" placeholder="assets/download.jfif" required
+                oninput="document.getElementById('destImgPreview').src=this.value">
+            </div>
+            <div
+              style="margin-top:0.5rem; height:140px; border-radius:6px; overflow:hidden; border:1px solid #ddd; background:#f5f5f5; display:flex; align-items:center; justify-content:center;">
+              <img id="destImgPreview" src="assets/download.jfif"
+                style="max-height:100%; max-width:100%; object-fit:cover;" onerror="this.src='assets/download.jfif'">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-gold"
+            onclick="closeModal('adminDestinationModal')">Cancel</button>
+          <button type="submit" class="btn btn-gold"><i class="fas fa-save"></i> Save Destination</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: BOOKING INVOICE CONFIRMATION -->
+  <div class="modal" id="bookingConfirmationModal">
+    <div class="modal-content" style="max-width:900px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-file-invoice text-gold"></i> Safari PDF Invoice</h3>
+        <button class="modal-close" onclick="closeModal('bookingConfirmationModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="invoiceRenderArea"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-gold" onclick="window.print()"><i class="fas fa-print"></i> Print
+          Invoice</button>
+        <button class="btn btn-gold" onclick="downloadInvoicePDF()"><i class="fas fa-download"></i> Download
+          PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+
+</html>

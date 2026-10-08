@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CYROO TOURS & SAFARI | Explore Kenya. Experience the Wild.</title>
+  <meta name="description"
+    content="Book unforgettable Kenyan safari tours and VIP airport transfers with Cyroo Tours & Safari. Maasai Mara, Amboseli, Tsavo, Lake Nakuru, Mount Kenya & Nairobi National Park.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css">
+
+  <!-- Supabase JS Client SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- html2pdf for Invoice Download -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+
+<body>
+
+  <!-- Top Info Bar -->
+  <div class="top-bar">
+    <div class="container top-bar-content">
+      <div class="top-info">
+        <div class="top-info-item"><i class="fas fa-phone text-gold"></i> <a href="tel:0726072607">0726072607</a> / <a
+            href="tel:0733185018">0733185018</a></div>
+        <div class="top-info-item"><i class="fas fa-envelope text-gold"></i> <a
+            href="mailto:cyrootourssafari@gmail.com">cyrootourssafari@gmail.com</a></div>
+      </div>
+      <div class="top-info">
+        <div class="top-info-item"><i class="fas fa-plane-arrival text-gold"></i> JKIA & Wilson Airport Transfers
+          Available</div>
+        <div class="top-info-item"><a href="admin.html" style="color:var(--gold-accent); font-weight:700;"><i
+              class="fas fa-lock"></i> Admin Portal</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Navigation -->
+  <header class="header">
+    <div class="container nav-container">
+      <a href="#home" class="logo">
+        <img src="assets/1-removebg-preview.png" alt="CYROO TOURS & SAFARI" class="brand-logo-img" style="height:85px; max-height:95px;">
+      </a>
+
+      <nav class="nav-menu" id="navMenu">
+        <a href="#home" class="nav-link active">Home</a>
+        <a href="#packages" class="nav-link">Safari Packages</a>
+        <a href="#destinations" class="nav-link">Destinations</a>
+        <a href="#about" class="nav-link">About Us</a>
+        <a href="#book" class="nav-link">Book a Safari</a>
+        <a href="#my-booking" class="nav-link">My Booking</a>
+        <a href="#contact" class="nav-link">Contact Us</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="#book" class="btn btn-gold btn-sm"><i class="fas fa-calendar-check"></i> Book Now</a>
+        <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle Navigation"><i
+            class="fas fa-bars"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <!-- PAGE VIEWS CONTAINER -->
+  <main style="padding-top: 80px;">
+
+    <!-- ==================== HOME SECTION ==================== -->
+    <div id="home" class="page-view">
+
+      <!-- HERO -->
+      <section class="hero">
+        <div class="hero-overlay"></div>
+        <div class="container">
+          <div class="hero-content">
+            <div class="hero-badge"><i class="fas fa-compass"></i> Premier Kenyan Wildlife & Airport Transfer Services
+            </div>
+            <h1 class="hero-title">Explore Kenya. <span>Experience the Wild.</span></h1>
+            <p class="hero-subtitle">Embark on extraordinary African safari adventures across Maasai Mara, Amboseli,
+              Tsavo, Lake Nakuru & Mount Kenya with Cyroo Tours & Safari.</p>
+
+            <div class="hero-buttons">
+              <a href="#book" class="btn btn-gold"><i class="fas fa-lion"></i> Book Your Safari</a>
+              <a href="#packages" class="btn btn-outline-gold"><i class="fas fa-binoculars"></i> View Packages</a>
+              <button class="btn btn-whatsapp" onclick="openQuickWhatsAppBooking()"><i class="fab fa-whatsapp"></i> Book
+                via WhatsApp</button>
+            </div>
+
+            <div class="hero-stats">
+              <div class="stat-item">
+                <span class="stat-number">100%</span>
+                <span class="stat-label">Big Five Guarantee</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-number">15+</span>
+                <span class="stat-label">Years Experience</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-number">5,000+</span>
+                <span class="stat-label">Happy Explorers</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-number">24/7</span>
+                <span class="stat-label">Airport Transfers</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+
+
+      <!-- AIRPORT SERVICES HIGHLIGHT BANNER -->
+      <section class="section" style="background:var(--warm-beige); padding:4rem 0;">
+        <div class="container">
+          <div
+            style="background:linear-gradient(135deg, var(--primary-green-dark), #0f281e); color:#fff; border-radius:var(--radius-md); padding:3rem; display:grid; grid-template-columns:1fr 340px; gap:2.5rem; align-items:center; box-shadow:var(--shadow-lg); border:1px solid var(--gold-accent);">
+            <div>
+              <span class="badge badge-confirmed"
+                style="background:var(--gold-accent); color:#000; font-weight:700; margin-bottom:1rem;">VIP AIRPORT
+                TRANSFERS</span>
+              <h2 style="font-size:2.4rem; color:#fff; margin-bottom:1rem;">Airport Pickup & Flight Connection Services
+              </h2>
+              <p style="color:var(--warm-beige-dark); margin-bottom:1.5rem; font-size:1.05rem; line-height:1.6;">
+                Arriving at <strong>Jomo Kenyatta International Airport (JKIA)</strong> or flying out from
+                <strong>Wilson Airport</strong>? Cyroo Tours & Safari offers 24/7 private executive airport pickups,
+                luggage handling, and direct transfers to your Nairobi hotel or safari lodge.
+              </p>
+              <div style="display:flex; gap:1.5rem; flex-wrap:wrap; font-size:0.95rem;">
+                <div><i class="fas fa-check-circle text-gold"></i> Flight Tracking & On-Time Guarantee</div>
+                <div><i class="fas fa-check-circle text-gold"></i> Air-conditioned Executive Vehicles</div>
+                <div><i class="fas fa-check-circle text-gold"></i> Chauffeur Meet & Greet</div>
+              </div>
+            </div>
+            <div
+              style="text-align:center; background:rgba(255,255,255,0.05); padding:2rem; border-radius:var(--radius-md); border:1px solid rgba(212,175,55,0.3);">
+              <i class="fas fa-plane-arrival text-gold" style="font-size:3.5rem; margin-bottom:1rem;"></i>
+              <h3 style="color:#fff; margin-bottom:0.5rem;">Need Airport Pickup?</h3>
+              <p style="color:var(--warm-beige-dark); font-size:0.9rem; margin-bottom:1.5rem;">Add airport services
+                during safari booking or book airport pickup standalone.</p>
+              <a href="#book" class="btn btn-gold" style="width:100%;"><i class="fas fa-taxi"></i> Book Airport
+                Service</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- POPULAR DESTINATIONS -->
+      <section class="section bg-dark text-white" style="background:var(--primary-green-dark);">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-subtitle">Kenya Wildlife Sanctuaries</span>
+            <h2 class="section-title light">Top Safari Destinations</h2>
+            <p class="section-desc light">From the endless plains of Maasai Mara to Mount Kilimanjaro views in Amboseli.
+            </p>
+          </div>
+          <div class="destinations-grid" id="destinationsContainer">
+            <!-- Dynamic Destinations Loaded via JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- WHY CHOOSE US -->
+      <section class="section">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-subtitle">The Cyroo Safari Standard</span>
+            <h2 class="section-title">Why Travel With Us?</h2>
+          </div>
+          <div class="features-grid">
+            <div class="feature-card">
+              <div class="feature-icon"><i class="fas fa-truck-monster"></i></div>
+              <h3 class="feature-title">Custom 4x4 Landcruisers</h3>
+              <p class="feature-desc">Specially fitted 4x4 vehicles with pop-up roofs, broad windows, charging ports,
+                and cooler boxes.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon"><i class="fas fa-user-shield"></i></div>
+              <h3 class="feature-title">Professional Guides</h3>
+              <p class="feature-desc">Certified Kenyan naturalists & trackers with decades of animal behavior knowledge.
+              </p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon"><i class="fas fa-plane"></i></div>
+              <h3 class="feature-title">Airport Transfers</h3>
+              <p class="feature-desc">24/7 JKIA & Wilson Airport VIP pickup, drop-off, and bush flight transfer
+                connections.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-icon"><i class="fas fa-sliders-h"></i></div>
+              <h3 class="feature-title">Tailor-Made Flexibility</h3>
+              <p class="feature-desc">Bespoke itineraries customized to your travel dates, group size, and personal
+                budget.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TESTIMONIALS -->
+      <section class="section"
+        style="background:linear-gradient(180deg, var(--primary-green-dark) 0%, var(--primary-green) 100%);">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-subtitle">Guest Experience</span>
+            <h2 class="section-title light">What Our Travelers Say</h2>
+          </div>
+          <div class="testimonials-slider">
+            <div class="testimonial-card">
+              <div class="testimonial-stars">★★★★★</div>
+              <p class="testimonial-text">"Cyroo Tours & Safari organized the most magical 4-day trip to Maasai Mara!
+                Their airport transfer driver met us right at JKIA arrival hall with our name sign, making our arrival
+                stress-free."</p>
+              <div class="testimonial-author">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
+                  class="author-avatar" alt="Client">
+                <div>
+                  <div class="author-name">Emily & James Watson</div>
+                  <div class="author-location">United Kingdom</div>
+                </div>
+              </div>
+            </div>
+            <div class="testimonial-card">
+              <div class="testimonial-stars">★★★★★</div>
+              <p class="testimonial-text">"Amboseli with Mount Kilimanjaro in the background was unbelievable! Cyroo
+                Tours made booking so seamless and their response on WhatsApp was super fast."</p>
+              <div class="testimonial-author">
+                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80"
+                  class="author-avatar" alt="Client">
+                <div>
+                  <div class="author-name">David K. Miller</div>
+                  <div class="author-location">United States</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== SAFARI PACKAGES SECTION ==================== -->
+    <div id="packages" class="page-view" style="display:none;">
+      <section class="section">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-subtitle">Safari & Airport Packages</span>
+            <h2 class="section-title">All Packages & Airport Transfer Services</h2>
+            <p class="section-desc">Explore our full catalog of game reserves, mountain treks, day tours, and VIP
+              airport transfers.</p>
+          </div>
+
+          <!-- Package Filter Categories -->
+          <div style="display:flex; justify-content:center; gap:0.75rem; margin-bottom:3rem; flex-wrap:wrap;">
+            <button class="btn btn-gold btn-sm pkg-filter-btn active" data-cat="all">All Packages</button>
+            <button class="btn btn-outline-gold btn-sm pkg-filter-btn" data-cat="Safari Parks">Safari Parks</button>
+            <button class="btn btn-outline-gold btn-sm pkg-filter-btn" data-cat="Mount Kenya">Mount Kenya</button>
+            <button class="btn btn-outline-gold btn-sm pkg-filter-btn" data-cat="Day Excursions">Day Excursions</button>
+            <button class="btn btn-outline-gold btn-sm pkg-filter-btn" data-cat="Airport Services"><i
+                class="fas fa-plane"></i> Airport Services</button>
+          </div>
+
+          <!-- Populated by JavaScript -->
+          <div class="packages-grid" id="allPackagesGrid"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== DESTINATIONS SECTION ==================== -->
+    <div id="destinations" class="page-view" style="display:none;">
+      <section class="section">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-subtitle">Explore Kenya</span>
+            <h2 class="section-title">Safari Destinations</h2>
+            <p class="section-desc">Discover the richest wildlife biomes in East Africa.</p>
+          </div>
+          <div class="destinations-grid" id="allDestinationsGrid"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== ABOUT US SECTION ==================== -->
+    <div id="about" class="page-view" style="display:none;">
+      <section class="section">
+        <div class="container">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:3rem; align-items:center;">
+            <div>
+              <span class="section-subtitle">About Cyroo Tours & Safari</span>
+              <h2 class="section-title">Your Trusted Kenyan Safari Companion</h2>
+              <p style="margin-bottom:1rem; color:#555;">CYROO TOURS & SAFARI is a premier eco-tour operator
+                headquartered in Nairobi, Kenya. We specialize in bespoke safari holidays, group wildlife expeditions,
+                honeymoon retreats, airport pickup transfers, and custom park excursions.</p>
+              <p style="margin-bottom:1.5rem; color:#555;">With deep local roots and an unwavering commitment to
+                sustainable tourism, we ensure every guest experiences authentic African wilderness while supporting
+                local conservation and Maasai communities.</p>
+
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:2rem;">
+                <div
+                  style="background:var(--white); padding:1rem; border-left:4px solid var(--gold-accent); box-shadow:var(--shadow-sm);">
+                  <strong style="color:var(--primary-green-dark);">Phone Support:</strong><br>
+                  0726072607 / 0733185018
+                </div>
+                <div
+                  style="background:var(--white); padding:1rem; border-left:4px solid var(--gold-accent); box-shadow:var(--shadow-sm);">
+                  <strong style="color:var(--primary-green-dark);">Direct Email:</strong><br>
+                  cyrootourssafari@gmail.com
+                </div>
+              </div>
+            </div>
+            <div>
+              <img src="assets/background 1 .png"
+                style="border-radius:var(--radius-md); box-shadow:var(--shadow-lg); width:100%; object-fit:cover; max-height:400px;" alt="Safari Expedition">
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== BOOK A SAFARI SECTION ==================== -->
+    <div id="book" class="page-view" style="display:none;">
+      <section class="section">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-subtitle">Reservations</span>
+            <h2 class="section-title">Book Your Safari Package</h2>
+            <p class="section-desc">Fill in your travel preferences below for instant pricing and invoice generation.
+            </p>
+          </div>
+
+          <!-- Sub-Nav Type Switcher -->
+          <div style="display:flex; justify-content:center; gap:1rem; margin-bottom:2.5rem; flex-wrap:wrap;">
+            <button id="bookingTabSafariBtn" type="button" class="btn btn-gold booking-type-btn active" style="font-size:1.1rem; padding:0.85rem 1.75rem;" onclick="switchBookingType('safari')">
+              <i class="fas fa-paw"></i> Book Safari Package
+            </button>
+            <button id="bookingTabAirportBtn" type="button" class="btn btn-outline-gold booking-type-btn" style="font-size:1.1rem; padding:0.85rem 1.75rem;" onclick="switchBookingType('airport')">
+              <i class="fas fa-plane-arrival"></i> Book Airport Transfer
+            </button>
+          </div>
+
+          <div class="booking-layout">
+            <!-- Form Card -->
+            <div class="booking-card">
+              <form id="customerBookingForm">
+                <h3
+                  style="margin-bottom:1.5rem; color:var(--primary-green-dark); border-bottom:2px solid var(--gold-accent); padding-bottom:0.5rem;">
+                  <i class="fas fa-user"></i> Guest Contact Details
+                </h3>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="bookingFullName">Full Name *</label>
+                    <input type="text" id="bookingFullName" class="form-control" placeholder="e.g. John Doe" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="bookingPhone">Phone Number *</label>
+                    <input type="tel" id="bookingPhone" class="form-control" placeholder="e.g. 0726072607" required>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <label class="form-label" for="bookingEmail">Email Address *</label>
+                  <input type="email" id="bookingEmail" class="form-control" placeholder="e.g. john@example.com"
+                    required>
+                </div>
+
+                <!-- BLOCK 1: SAFARI BOOKING BLOCK -->
+                <div id="safariBookingBlock">
+                  <h3
+                    style="margin-top:2rem; margin-bottom:1.5rem; color:var(--primary-green-dark); border-bottom:2px solid var(--gold-accent); padding-bottom:0.5rem;">
+                    <i class="fas fa-map-marked-alt"></i> Safari Selection
+                  </h3>
+
+                  <div class="form-group">
+                    <label class="form-label" for="bookingPackageSelect">Select Safari Package *</label>
+                    <select id="bookingPackageSelect" class="form-select" required>
+                      <!-- Populated by JS -->
+                    </select>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label" for="bookingAdults">Adults (Age 12+) *</label>
+                      <input type="number" id="bookingAdults" class="form-control" value="2" min="1" required>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="bookingChildren">Children (Age 3-11)</label>
+                      <input type="number" id="bookingChildren" class="form-control" value="0" min="0">
+                    </div>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label" for="bookingTravelDate">Travel Start Date *</label>
+                      <input type="date" id="bookingTravelDate" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="bookingReturnDate">Return Date</label>
+                      <input type="date" id="bookingReturnDate" class="form-control" readonly style="background:#eee;">
+                    </div>
+                  </div>
+
+                  <div class="form-group" style="margin-top:1.5rem;">
+                    <label class="form-label" for="bookingSafariAirportAddon"><i class="fas fa-taxi text-gold"></i> Optional Airport Transfer Add-On</label>
+                    <select id="bookingSafariAirportAddon" class="form-select">
+                      <option value="No Airport Transfer" data-fee="0">No Airport Add-On Needed</option>
+                      <option value="JKIA Airport Arrival Pickup & Hotel Transfer" data-fee="3000">JKIA Airport Arrival Pickup (+ KES 3,000)</option>
+                      <option value="Nairobi Hotel to JKIA Drop-off" data-fee="3000">JKIA Departure Drop-off (+ KES 3,000)</option>
+                      <option value="Both JKIA Pickup & Drop-off Transfer" data-fee="5500">Both JKIA Pickup & Drop-off (+ KES 5,500)</option>
+                      <option value="Wilson Airport Safari Bush Flight Connection" data-fee="2500">Wilson Airport Safari Connection (+ KES 2,500)</option>
+                      <option value="VIP Chauffeur Airport Service" data-fee="8000">VIP Luxury Executive Airport Chauffeur (+ KES 8,000)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <!-- BLOCK 2: AIRPORT TRANSFER BOOKING BLOCK -->
+                <div id="airportBookingBlock" style="display:none;">
+                  <h3
+                    style="margin-top:2rem; margin-bottom:1.5rem; color:var(--primary-green-dark); border-bottom:2px solid var(--gold-accent); padding-bottom:0.5rem;">
+                    <i class="fas fa-plane-arrival"></i> Airport Transfer Package Selection
+                  </h3>
+
+                  <div class="form-group">
+                    <label class="form-label" for="bookingAirportService">Select Airport Transfer Service *</label>
+                    <select id="bookingAirportService" class="form-select">
+                      <!-- Populated dynamically by JS -->
+                    </select>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label" for="bookingAirportPassengers"><i class="fas fa-users text-gold"></i> Transfer Passengers *</label>
+                      <input type="number" id="bookingAirportPassengers" class="form-control" value="2" min="1">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="bookingTransport"><i class="fas fa-car text-gold"></i> Transport Vehicle Type</label>
+                      <select id="bookingTransport" class="form-select">
+                        <option value="Executive Airport Sedan / SUV">Executive Airport Sedan / SUV</option>
+                        <option value="4x4 Safari Landcruiser">4x4 Safari Landcruiser (Pop-Up Roof)</option>
+                        <option value="4x4 Landcruiser VIP Edition">4x4 Landcruiser VIP (+ KES 15,000)</option>
+                        <option value="Customized Safari Tour Van">Customized Safari Tour Van</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-row">
+                    <div class="form-group">
+                      <label class="form-label" for="bookingAirportDate"><i class="fas fa-calendar-alt text-gold"></i> Pickup / Transfer Date *</label>
+                      <input type="date" id="bookingAirportDate" class="form-control">
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label" for="bookingAirportTime"><i class="fas fa-clock text-gold"></i> Pickup / Flight Time *</label>
+                      <input type="time" id="bookingAirportTime" class="form-control" value="08:00">
+                    </div>
+                  </div>
+                </div>
+
+                <div class="form-group" style="margin-top:1.5rem;">
+                  <label class="form-label" for="bookingSpecialRequests">Special Requests / Flight Numbers / Dietary Requirements</label>
+                  <textarea id="bookingSpecialRequests" class="form-control" rows="3"
+                    placeholder="e.g. Flight arrival number KQ 101 at 06:00 AM, extra luggage space, honeymoon setup..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-gold" style="width:100%; font-size:1.1rem; padding:1rem; margin-top:1rem;"><i
+                    class="fas fa-check-circle"></i> Confirm & Generate Invoice</button>
+              </form>
+            </div>
+
+            <!-- Live Calculation Summary Card -->
+            <div class="summary-card">
+              <h3 class="summary-title"><i class="fas fa-calculator"></i> Price Summary</h3>
+
+              <div class="summary-row">
+                <span style="color:var(--warm-beige-dark);">Package:</span>
+                <strong id="summaryPkgName" style="color:#fff; text-align:right;">Select a package</strong>
+              </div>
+              <div class="summary-row">
+                <span style="color:var(--warm-beige-dark);">Adults Charge:</span>
+                <span id="summaryAdults">0 x KES 0</span>
+              </div>
+              <div class="summary-row">
+                <span style="color:var(--warm-beige-dark);">Children Charge:</span>
+                <span id="summaryChildren">0 x KES 0</span>
+              </div>
+              <div class="summary-row">
+                <span style="color:var(--warm-beige-dark);">Airport Service:</span>
+                <span id="summaryAirport" class="text-gold">No Airport Service</span>
+              </div>
+              <div class="summary-row">
+                <span style="color:var(--warm-beige-dark);">Park Fees & Tax:</span>
+                <span class="text-gold">Included</span>
+              </div>
+              <div class="summary-row total">
+                <span>Total Payable:</span>
+                <span id="summaryTotal">KES 0</span>
+              </div>
+
+              <div
+                style="margin-top:2rem; padding-top:1rem; border-top:1px solid rgba(255,255,255,0.1); font-size:0.85rem; color:var(--warm-beige-dark);">
+                <p><i class="fas fa-shield-alt text-gold"></i> Free instant PDF invoice generation.</p>
+                <p style="margin-top:0.5rem;"><i class="fab fa-whatsapp text-gold"></i> Admin notified automatically on
+                  WhatsApp.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== MY BOOKING SECTION ==================== -->
+    <div id="my-booking" class="page-view" style="display:none;">
+      <section class="section">
+        <div class="container" style="max-width:800px;">
+          <div class="section-header">
+            <span class="section-subtitle">Track Booking</span>
+            <h2 class="section-title">Look Up Your Safari Booking</h2>
+            <p class="section-desc">Enter your Booking Reference and Phone Number to check status or download your
+              invoice.</p>
+          </div>
+
+          <div class="booking-card">
+            <form id="trackBookingForm">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label" for="trackRef">Booking Reference *</label>
+                  <input type="text" id="trackRef" class="form-control" placeholder="e.g. CYR-2026-0001" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="trackPhone">Phone Number *</label>
+                  <input type="tel" id="trackPhone" class="form-control" placeholder="e.g. 0712345678" required>
+                </div>
+              </div>
+              <button type="submit" class="btn btn-gold" style="width:100%;"><i class="fas fa-search"></i> Search
+                Booking</button>
+            </form>
+          </div>
+
+          <div id="bookingTrackResult"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ==================== CONTACT US SECTION ==================== -->
+    <div id="contact" class="page-view" style="display:none;">
+      <section class="section">
+        <div class="container">
+          <div class="section-header">
+            <span class="section-subtitle">Get In Touch</span>
+            <h2 class="section-title">Contact Cyroo Tours & Safari</h2>
+            <p class="section-desc">Our safari specialists are available 24/7 to plan your dream vacation.</p>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:3rem;">
+            <div class="booking-card">
+              <form id="contactForm">
+                <div class="form-group">
+                  <label class="form-label" for="contactName">Your Name *</label>
+                  <input type="text" id="contactName" class="form-control" required>
+                </div>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label class="form-label" for="contactEmail">Email Address *</label>
+                    <input type="email" id="contactEmail" class="form-control" required>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label" for="contactPhone">Phone Number *</label>
+                    <input type="tel" id="contactPhone" class="form-control" required>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="contactMessage">Message / Inquiry *</label>
+                  <textarea id="contactMessage" class="form-control" rows="4" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-gold"><i class="fas fa-paper-plane"></i> Send Message</button>
+              </form>
+            </div>
+
+            <div>
+              <div
+                style="background:var(--primary-green-dark); color:#fff; padding:2.5rem; border-radius:var(--radius-md); box-shadow:var(--shadow-md);">
+                <h3 style="color:var(--gold-accent); margin-bottom:1.5rem; font-size:1.6rem;">Contact Information</h3>
+
+                <div style="margin-bottom:1.5rem; display:flex; gap:1rem;">
+                  <i class="fas fa-phone fa-lg text-gold" style="margin-top:0.25rem;"></i>
+                  <div>
+                    <strong>Phone Numbers:</strong><br>
+                    <a href="tel:0726072607" style="color:#fff;">0726072607</a> / <a href="tel:0733185018"
+                      style="color:#fff;">0733185018</a>
+                  </div>
+                </div>
+
+                <div style="margin-bottom:1.5rem; display:flex; gap:1rem;">
+                  <i class="fas fa-envelope fa-lg text-gold" style="margin-top:0.25rem;"></i>
+                  <div>
+                    <strong>Email Address:</strong><br>
+                    <a href="mailto:cyrootourssafari@gmail.com" style="color:#fff;">cyrootourssafari@gmail.com</a>
+                  </div>
+                </div>
+
+                <div style="margin-bottom:1.5rem; display:flex; gap:1rem;">
+                  <i class="fab fa-whatsapp fa-lg text-gold" style="margin-top:0.25rem;"></i>
+                  <div>
+                    <strong>WhatsApp Business:</strong><br>
+                    +254 726 072 607
+                  </div>
+                </div>
+
+                <div style="margin-top:2rem;">
+                  <button class="btn btn-whatsapp" onclick="openQuickWhatsAppBooking()"><i class="fab fa-whatsapp"></i>
+                    Chat Live on WhatsApp</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+  </main>
+
+  <!-- MODAL: PACKAGE DETAILS -->
+  <div class="modal" id="packageDetailModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="packageModalTitle">Package Details</h3>
+        <button class="modal-close" onclick="closeModal('packageDetailModal')">&times;</button>
+      </div>
+      <div class="modal-body" id="packageModalContent"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: BOOKING CONFIRMATION & INVOICE -->
+  <div class="modal" id="bookingConfirmationModal">
+    <div class="modal-content" style="max-width:900px;">
+      <div class="modal-header">
+        <h3 class="modal-title"><i class="fas fa-file-invoice text-gold"></i> Booking Invoice Confirmation</h3>
+        <button class="modal-close" onclick="closeModal('bookingConfirmationModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="invoiceRenderArea"></div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline-gold" onclick="window.print()"><i class="fas fa-print"></i> Print
+          Invoice</button>
+        <button class="btn btn-gold" onclick="downloadInvoicePDF()"><i class="fas fa-download"></i> Download PDF
+          Invoice</button>
+        <button class="btn btn-whatsapp" onclick="sendWhatsAppForCurrentBooking()"><i class="fab fa-whatsapp"></i> Send to
+          WhatsApp</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div>
+          <img src="assets/1-removebg-preview.png" alt="CYROO TOURS & SAFARI" style="height:95px; margin-bottom:1rem;">
+          <p class="footer-desc">Explore Kenya. Experience the Wild. Premier African safari tours, wild game drives,
+            luxury lodges, and 24/7 airport pickup transfers.</p>
+        </div>
+        <div class="footer-links">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#packages">Safari Packages</a></li>
+            <li><a href="#destinations">Destinations</a></li>
+            <li><a href="#book">Book a Safari</a></li>
+            <li><a href="#my-booking">My Booking</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 style="color:var(--gold-accent); margin-bottom:1.25rem;">Contact Cyroo Tours</h4>
+          <div class="footer-contact-item"><i class="fas fa-phone text-gold"></i> 0726072607 / 0733185018</div>
+          <div class="footer-contact-item"><i class="fas fa-envelope text-gold"></i> cyrootourssafari@gmail.com</div>
+          <div class="footer-contact-item"><i class="fas fa-map-marker-alt text-gold"></i> Nairobi, Kenya</div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2026 CYROO TOURS & SAFARI. All Rights Reserved. Designed with African Safari Excellence.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/config.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>
