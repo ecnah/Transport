@@ -179,7 +179,7 @@ Deno.serve(async (req: Request) => {
                     `Travel Date: ${travel_date}\n` +
                     `Travelers: ${numAdults} Adults, ${numChildren} Children\n` +
                     `Airport Service: ${apService}\n` +
-                    `Total: KES ${totalAmount.toLocaleString()}\n` +
+                    `Total: $${totalAmount.toLocaleString()}\n` +
                     `Status: Pending\n\n` +
                     `Please login to the admin dashboard to review the booking.`
             }

@@ -4,21 +4,22 @@
 
 -- Enable UUID Extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- 1. ADMINS TABLE
 CREATE TABLE IF NOT EXISTS public.admins (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     full_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     phone VARCHAR(50),
-    role VARCHAR(50) DEFAULT 'admin',
+    role VARCHAR(50) DEFAULT 'Super Admin',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- 2. CUSTOMERS TABLE
 CREATE TABLE IF NOT EXISTS public.customers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     full_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
@@ -28,7 +29,7 @@ CREATE TABLE IF NOT EXISTS public.customers (
 
 -- 3. DESTINATIONS TABLE
 CREATE TABLE IF NOT EXISTS public.destinations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     tagline VARCHAR(255),
     description TEXT,
@@ -39,14 +40,14 @@ CREATE TABLE IF NOT EXISTS public.destinations (
 
 -- 4. SAFARI PACKAGES TABLE
 CREATE TABLE IF NOT EXISTS public.safari_packages (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     destination VARCHAR(255) NOT NULL,
     category VARCHAR(100) DEFAULT 'Safari Parks',
     description TEXT NOT NULL,
     days INT NOT NULL DEFAULT 3,
-    price INT NOT NULL DEFAULT 0, -- KES per adult
-    price_child INT DEFAULT 0, -- KES per child
+    price INT NOT NULL DEFAULT 0, -- USD ($) per adult
+    price_child INT DEFAULT 0, -- USD ($) per child
     image_url TEXT,
     accommodation_info TEXT,
     transport_info TEXT,
@@ -60,11 +61,16 @@ CREATE TABLE IF NOT EXISTS public.safari_packages (
 
 -- 5. BOOKINGS TABLE
 CREATE TABLE IF NOT EXISTS public.bookings (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     booking_reference VARCHAR(50) UNIQUE NOT NULL,
-    customer_id UUID REFERENCES public.customers(id) ON DELETE CASCADE,
+    customer_id UUID REFERENCES public.customers(id) ON DELETE SET NULL,
     package_id UUID REFERENCES public.safari_packages(id) ON DELETE SET NULL,
     destination_id UUID REFERENCES public.destinations(id) ON DELETE SET NULL,
+    customer_name VARCHAR(255),
+    customer_phone VARCHAR(50),
+    customer_email VARCHAR(255),
+    package_name VARCHAR(255),
+    destination VARCHAR(255),
     travel_date DATE NOT NULL,
     return_date DATE NOT NULL,
     adults INT NOT NULL DEFAULT 1,
@@ -86,7 +92,7 @@ CREATE TABLE IF NOT EXISTS public.bookings (
 
 -- 6. BOOKING ITEMS TABLE
 CREATE TABLE IF NOT EXISTS public.booking_items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     booking_id UUID REFERENCES public.bookings(id) ON DELETE CASCADE,
     item_name VARCHAR(255) NOT NULL,
     unit_price NUMERIC(12, 2) NOT NULL,
@@ -97,12 +103,19 @@ CREATE TABLE IF NOT EXISTS public.booking_items (
 
 -- 7. INVOICES TABLE
 CREATE TABLE IF NOT EXISTS public.invoices (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     invoice_number VARCHAR(50) UNIQUE NOT NULL,
     booking_id UUID REFERENCES public.bookings(id) ON DELETE CASCADE,
+    booking_reference VARCHAR(50),
     customer_name VARCHAR(255) NOT NULL,
     customer_phone VARCHAR(50) NOT NULL,
     customer_email VARCHAR(255) NOT NULL,
+    package_name VARCHAR(255),
+    destination VARCHAR(255),
+    travel_date DATE,
+    return_date DATE,
+    adults INT DEFAULT 1,
+    children INT DEFAULT 0,
     subtotal NUMERIC(12, 2) NOT NULL,
     discount NUMERIC(12, 2) DEFAULT 0,
     total_amount NUMERIC(12, 2) NOT NULL,
@@ -116,7 +129,7 @@ CREATE TABLE IF NOT EXISTS public.invoices (
 
 -- 8. INVOICE ITEMS TABLE
 CREATE TABLE IF NOT EXISTS public.invoice_items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     invoice_id UUID REFERENCES public.invoices(id) ON DELETE CASCADE,
     item_description TEXT NOT NULL,
     amount NUMERIC(12, 2) NOT NULL,
@@ -125,8 +138,9 @@ CREATE TABLE IF NOT EXISTS public.invoice_items (
 
 -- 9. PAYMENTS TABLE
 CREATE TABLE IF NOT EXISTS public.payments (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     booking_id UUID REFERENCES public.bookings(id) ON DELETE CASCADE,
+    booking_reference VARCHAR(50),
     customer_name VARCHAR(255) NOT NULL,
     amount NUMERIC(12, 2) NOT NULL,
     payment_method VARCHAR(50) NOT NULL, -- M-Pesa, Bank Transfer, Cash, Card
@@ -139,7 +153,7 @@ CREATE TABLE IF NOT EXISTS public.payments (
 
 -- 10. NOTIFICATIONS TABLE
 CREATE TABLE IF NOT EXISTS public.notifications (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     booking_id UUID REFERENCES public.bookings(id) ON DELETE CASCADE,
     type VARCHAR(50) NOT NULL, -- WhatsApp, Email, System
     recipient VARCHAR(255) NOT NULL,
@@ -152,7 +166,7 @@ CREATE TABLE IF NOT EXISTS public.notifications (
 
 -- 11. CONTACT MESSAGES TABLE
 CREATE TABLE IF NOT EXISTS public.contact_messages (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     full_name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
     phone VARCHAR(50) NOT NULL,
@@ -164,7 +178,7 @@ CREATE TABLE IF NOT EXISTS public.contact_messages (
 -- =========================================================
 -- AUTOMATIC BOOKING REFERENCE GENERATOR TRIGGER
 -- =========================================================
-CREATE SEQUENCE IF NOT EXISTS booking_ref_seq START 1;
+CREATE SEQUENCE IF NOT EXISTS booking_ref_seq START 1000;
 
 CREATE OR REPLACE FUNCTION generate_booking_ref()
 RETURNS TRIGGER AS $$
@@ -216,51 +230,36 @@ ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.contact_messages ENABLE ROW LEVEL SECURITY;
 
--- 1. Safari Packages & Destinations (Public Read, Admin Write)
-CREATE POLICY "Public Read Packages" ON public.safari_packages FOR SELECT USING (true);
-CREATE POLICY "Admin All Packages" ON public.safari_packages FOR ALL USING (auth.role() = 'authenticated');
+-- Drop any conflicting existing policies
+DROP POLICY IF EXISTS "Allow all public access safari_packages" ON public.safari_packages;
+DROP POLICY IF EXISTS "Allow all public access destinations" ON public.destinations;
+DROP POLICY IF EXISTS "Allow all public access customers" ON public.customers;
+DROP POLICY IF EXISTS "Allow all public access bookings" ON public.bookings;
+DROP POLICY IF EXISTS "Allow all public access booking_items" ON public.booking_items;
+DROP POLICY IF EXISTS "Allow all public access invoices" ON public.invoices;
+DROP POLICY IF EXISTS "Allow all public access invoice_items" ON public.invoice_items;
+DROP POLICY IF EXISTS "Allow all public access payments" ON public.payments;
+DROP POLICY IF EXISTS "Allow all public access notifications" ON public.notifications;
+DROP POLICY IF EXISTS "Allow all public access contact_messages" ON public.contact_messages;
+DROP POLICY IF EXISTS "Allow all public access admins" ON public.admins;
 
-CREATE POLICY "Public Read Destinations" ON public.destinations FOR SELECT USING (true);
-CREATE POLICY "Admin All Destinations" ON public.destinations FOR ALL USING (auth.role() = 'authenticated');
-
--- 2. Customers Policy (Public Insert, Authenticated/Admin Read-Write)
-CREATE POLICY "Public Insert Customers" ON public.customers FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public Select Customers" ON public.customers FOR SELECT USING (true);
-CREATE POLICY "Admin All Customers" ON public.customers FOR ALL USING (auth.role() = 'authenticated');
-
--- 3. Bookings Policy (Public Insert & Lookup by Reference/Phone, Admin Full Access)
-CREATE POLICY "Public Insert Bookings" ON public.bookings FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public Select Bookings" ON public.bookings FOR SELECT USING (true);
-CREATE POLICY "Admin All Bookings" ON public.bookings FOR ALL USING (auth.role() = 'authenticated');
-
--- 4. Booking Items & Invoices (Public Select & Insert for their booking, Admin Full Access)
-CREATE POLICY "Public Insert Booking Items" ON public.booking_items FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public Select Booking Items" ON public.booking_items FOR SELECT USING (true);
-CREATE POLICY "Admin All Booking Items" ON public.booking_items FOR ALL USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Public Insert Invoices" ON public.invoices FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public Select Invoices" ON public.invoices FOR SELECT USING (true);
-CREATE POLICY "Admin All Invoices" ON public.invoices FOR ALL USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Public Insert Invoice Items" ON public.invoice_items FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public Select Invoice Items" ON public.invoice_items FOR SELECT USING (true);
-CREATE POLICY "Admin All Invoice Items" ON public.invoice_items FOR ALL USING (auth.role() = 'authenticated');
-
--- 5. Payments, Notifications & Messages
-CREATE POLICY "Public Insert Payments" ON public.payments FOR INSERT WITH CHECK (true);
-CREATE POLICY "Public Select Payments" ON public.payments FOR SELECT USING (true);
-CREATE POLICY "Admin All Payments" ON public.payments FOR ALL USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Public Insert Contact Messages" ON public.contact_messages FOR INSERT WITH CHECK (true);
-CREATE POLICY "Admin All Contact Messages" ON public.contact_messages FOR ALL USING (auth.role() = 'authenticated');
-
-CREATE POLICY "Admin All Notifications" ON public.notifications FOR ALL USING (auth.role() = 'authenticated');
-CREATE POLICY "Admin All Admins" ON public.admins FOR ALL USING (auth.role() = 'authenticated');
+-- Grant Full Permissive Policies for Web App Operations
+CREATE POLICY "Allow all public access safari_packages" ON public.safari_packages FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all public access destinations" ON public.destinations FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all public access customers" ON public.customers FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all public access bookings" ON public.bookings FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all public access booking_items" ON public.booking_items FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all public access invoices" ON public.invoices FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all public access invoice_items" ON public.invoice_items FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all public access payments" ON public.payments FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all public access notifications" ON public.notifications FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all public access contact_messages" ON public.contact_messages FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all public access admins" ON public.admins FOR ALL USING (true) WITH CHECK (true);
 
 -- =========================================================
 -- REALTIME PUBLICATION ENABLEMENT
 -- =========================================================
 BEGIN;
   DROP PUBLICATION IF EXISTS supabase_realtime;
-  CREATE PUBLICATION supabase_realtime FOR TABLE public.bookings, public.notifications, public.payments, public.contact_messages;
+  CREATE PUBLICATION supabase_realtime FOR TABLE public.bookings, public.notifications, public.payments, public.contact_messages, public.destinations, public.safari_packages;
 COMMIT;

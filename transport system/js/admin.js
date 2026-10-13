@@ -42,6 +42,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     showToastNotification(`🔔 New Booking Received!\nRef: ${newBooking.booking_reference}\nGuest: ${newBooking.customer_name || 'Guest'}`);
     refreshAdminData();
   });
+
+  adminUpdateDbStatusBadge();
 });
 
 function showAdminLoginUI() {
@@ -101,6 +103,7 @@ async function refreshAdminData() {
   renderDestinationsGrid();
   renderPaymentsTable();
   renderMessagesTable();
+  adminUpdateDbStatusBadge();
 }
 
 function switchAdminTab(tabName) {
@@ -108,6 +111,17 @@ function switchAdminTab(tabName) {
   document.querySelectorAll('.admin-view').forEach(v => v.style.display = 'none');
   const targetView = document.getElementById(`adminView_${tabName}`);
   if (targetView) targetView.style.display = 'block';
+
+  // Sync Admin Menu Sidebar Active Items
+  document.querySelectorAll('.admin-menu-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.tab === tabName);
+  });
+
+  // Sync Mobile Bottom Admin Navigation Items
+  document.querySelectorAll('.admin-bottom-item[data-tab]').forEach(item => {
+    item.classList.toggle('active', item.dataset.tab === tabName);
+  });
+
   window.closeAdminMobileSidebar();
 }
 
@@ -134,8 +148,8 @@ function renderDashboardStats() {
   if (document.getElementById('statAirportBookings')) document.getElementById('statAirportBookings').textContent = airportBookings.length;
   if (document.getElementById('statTotalUsers')) document.getElementById('statTotalUsers').textContent = allUsersData.length;
   if (document.getElementById('statPendingBookings')) document.getElementById('statPendingBookings').textContent = pendingBookings;
-  if (document.getElementById('statTotalRevenue')) document.getElementById('statTotalRevenue').textContent = `KES ${totalRevenue.toLocaleString()}`;
-  if (document.getElementById('statOutstandingBalance')) document.getElementById('statOutstandingBalance').textContent = `KES ${outstandingBalance.toLocaleString()}`;
+  if (document.getElementById('statTotalRevenue')) document.getElementById('statTotalRevenue').textContent = `$${totalRevenue.toLocaleString()}`;
+  if (document.getElementById('statOutstandingBalance')) document.getElementById('statOutstandingBalance').textContent = `$${outstandingBalance.toLocaleString()}`;
 
   // Render Chart if Chart.js is loaded
   renderChart(safariBookings.length, airportBookings.length, pendingBookings);
@@ -211,9 +225,9 @@ function renderSafariBookingsTable() {
       <td>${b.package_name}</td>
       <td>${b.travel_date}</td>
       <td>${b.adults} A / ${b.children} C</td>
-      <td><strong>KES ${Number(b.total_amount).toLocaleString()}</strong></td>
-      <td style="color:#28a745;">KES ${Number(b.amount_paid || 0).toLocaleString()}</td>
-      <td style="color:${b.balance > 0 ? '#dc3545' : '#28a745'};">KES ${Number(b.balance || 0).toLocaleString()}</td>
+      <td><strong>$${Number(b.total_amount).toLocaleString()}</strong></td>
+      <td style="color:#28a745;">$${Number(b.amount_paid || 0).toLocaleString()}</td>
+      <td style="color:${b.balance > 0 ? '#dc3545' : '#28a745'};">$${Number(b.balance || 0).toLocaleString()}</td>
       <td><span class="badge ${statusClass}">${b.booking_status}</span></td>
       <td><span class="badge ${payClass}">${b.payment_status}</span></td>
       <td>
@@ -279,9 +293,9 @@ function renderAirportBookingsTable() {
         <span class="badge badge-confirmed" style="background:#e3f2fd; color:#1565c0;"><i class="fas fa-plane-arrival"></i> ${b.airport_service || b.package_name || 'Airport Transfer'}</span>
       </td>
       <td>${b.travel_date}</td>
-      <td><strong>KES ${totalAmt.toLocaleString()}</strong></td>
-      <td style="color:#28a745;">KES ${paidAmt.toLocaleString()}</td>
-      <td style="color:${balanceAmt > 0 ? '#dc3545' : '#28a745'};">KES ${balanceAmt.toLocaleString()}</td>
+      <td><strong>$${totalAmt.toLocaleString()}</strong></td>
+      <td style="color:#28a745;">$${paidAmt.toLocaleString()}</td>
+      <td style="color:${balanceAmt > 0 ? '#dc3545' : '#28a745'};">$${balanceAmt.toLocaleString()}</td>
       <td><span class="badge ${payClass}">${b.payment_status}</span></td>
       <td><span class="badge ${statusClass}">${b.booking_status}</span></td>
       <td>
@@ -425,11 +439,219 @@ window.adminSubmitPayment = async function(e) {
   });
 
   closeModal('adminPaymentModal');
-  showToastNotification(`Payment of KES ${Number(amount).toLocaleString()} recorded successfully!`);
+  showToastNotification(`Payment of $${Number(amount).toLocaleString()} recorded successfully!`);
   await refreshAdminData();
 };
 
 // ----------------------------------------------------
+// ----------------------------------------------------
+// PACKAGE MANAGEMENT (SAFARI vs AIRPORT TRANSFERS)
+// ----------------------------------------------------
+// ----------------------------------------------------
+// ALL AVAILABLE ASSETS (12 Local Images for Safari, Airport & Destinations)
+// ----------------------------------------------------
+const ALL_AVAILABLE_ASSETS = [
+  {
+    path: "assets/download.jfif",
+    name: "Maasai Mara Lions",
+    category: "Safari Parks",
+    desc: "Big Cats & Maasai Mara Plains"
+  },
+  {
+    path: "assets/download (1).jfif",
+    name: "Amboseli Elephants",
+    category: "Safari Parks",
+    desc: "Elephant Family in Plains"
+  },
+  {
+    path: "assets/download (2).jfif",
+    name: "Airport Shuttle Van",
+    category: "Airport Services",
+    desc: "VIP Airport Transfer Vehicle"
+  },
+  {
+    path: "assets/Amboseli National  (1).png",
+    name: "Amboseli Elephants (1)",
+    category: "Safari Parks",
+    desc: "Amboseli Elephant Herd"
+  },
+  {
+    path: "assets/Amboseli National  (2).png",
+    name: "Mt. Kilimanjaro (2)",
+    category: "Safari Parks",
+    desc: "Amboseli & Mt Kilimanjaro"
+  },
+  {
+    path: "assets/Amboseli National  (3).png",
+    name: "Wildlife Reserve (3)",
+    category: "Safari Parks",
+    desc: "Amboseli Game Drive"
+  },
+  {
+    path: "assets/Amboseli National  (4).png",
+    name: "Sunset Expedition (4)",
+    category: "Safari Parks",
+    desc: "Amboseli Sunset & Acacia"
+  },
+  {
+    path: "assets/Amboseli National  (5).png",
+    name: "Safari 4x4 Cruiser (5)",
+    category: "Vehicles / Safari",
+    desc: "4x4 Land Cruiser in Savannah"
+  },
+  {
+    path: "assets/Amboseli National  (6).png",
+    name: "Panorama Plains (6)",
+    category: "Safari Parks",
+    desc: "Amboseli Vast Plains Panorama"
+  },
+  {
+    path: "assets/wallpaper , HD wallpaper , 4k wallpaper.jfif",
+    name: "Lake Nakuru & Rift",
+    category: "Lakes & Valleys",
+    desc: "Lake Nakuru & Great Rift Valley"
+  },
+  {
+    path: "assets/background 1 .png",
+    name: "African Savannah",
+    category: "Destinations",
+    desc: "Wild African Safari Panorama"
+  },
+  {
+    path: "assets/1-removebg-preview.png",
+    name: "Cyroo Brand Logo",
+    category: "Branding",
+    desc: "Cyroo Tours Official Brand Logo"
+  }
+];
+
+window.renderAssetGallery = function(gridId, inputId, previewId, selectId, captionId, selectedPath) {
+  const container = document.getElementById(gridId);
+  if (!container) return;
+
+  const currentVal = (selectedPath || '').trim();
+
+  container.innerHTML = ALL_AVAILABLE_ASSETS.map((asset, index) => {
+    const isSelected = currentVal === asset.path;
+    const activeClass = isSelected ? ' active' : '';
+    return `
+      <div class="asset-thumb-card${activeClass}" 
+           title="${asset.name} (${asset.path})"
+           data-asset-path="${asset.path}"
+           onclick="selectAssetByIndex('${gridId}', '${inputId}', '${previewId}', '${selectId}', '${captionId}', ${index})">
+        <div class="asset-thumb-img-wrapper">
+          <img src="${asset.path}" class="asset-thumb-img" alt="${asset.name}" loading="lazy" onerror="this.src='assets/download.jfif'">
+          <div class="asset-thumb-check"><i class="fas fa-check"></i></div>
+        </div>
+        <div class="asset-thumb-info">
+          <span class="asset-thumb-name">${asset.name}</span>
+          <span class="asset-thumb-cat">${asset.category}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+};
+
+window.selectAssetByIndex = function(gridId, inputId, previewId, selectId, captionId, index) {
+  const asset = ALL_AVAILABLE_ASSETS[index];
+  if (!asset) return;
+  const assetPath = asset.path;
+
+  const input = document.getElementById(inputId);
+  const preview = document.getElementById(previewId);
+  const select = document.getElementById(selectId);
+  const caption = document.getElementById(captionId);
+  const grid = document.getElementById(gridId);
+
+  if (input) input.value = assetPath;
+  if (preview) preview.src = assetPath;
+  if (caption) caption.textContent = assetPath;
+
+  if (select) {
+    let matched = false;
+    for (let i = 0; i < select.options.length; i++) {
+      if (select.options[i].value === assetPath) {
+        select.selectedIndex = i;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) select.value = '';
+  }
+
+  if (grid) {
+    grid.querySelectorAll('.asset-thumb-card').forEach(card => {
+      if (card.getAttribute('data-asset-path') === assetPath) {
+        card.classList.add('active');
+      } else {
+        card.classList.remove('active');
+      }
+    });
+  }
+};
+
+window.applyAssetImageToInput = function(selectId, inputId, previewId, gridId, captionId) {
+  const select = document.getElementById(selectId);
+  const input = document.getElementById(inputId);
+  const preview = document.getElementById(previewId);
+  const caption = document.getElementById(captionId);
+  const grid = document.getElementById(gridId);
+  if (!select || !input) return;
+
+  const chosenPath = select.value;
+  if (chosenPath) {
+    input.value = chosenPath;
+    if (preview) preview.src = chosenPath;
+    if (caption) caption.textContent = chosenPath;
+    if (grid) {
+      grid.querySelectorAll('.asset-thumb-card').forEach(card => {
+        if (card.getAttribute('data-asset-path') === chosenPath) {
+          card.classList.add('active');
+        } else {
+          card.classList.remove('active');
+        }
+      });
+    }
+  }
+};
+
+window.onManualImageInputChange = function(val, previewId, selectId, gridId, captionId) {
+  const trimmed = (val || '').trim();
+  const preview = document.getElementById(previewId);
+  const select = document.getElementById(selectId);
+  const caption = document.getElementById(captionId);
+  const grid = document.getElementById(gridId);
+
+  if (preview && trimmed) {
+    preview.src = trimmed;
+  }
+  if (caption) {
+    caption.textContent = trimmed || 'No image path specified';
+  }
+  if (select) {
+    let matched = false;
+    for (let i = 0; i < select.options.length; i++) {
+      if (select.options[i].value === trimmed) {
+        select.selectedIndex = i;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      select.value = '';
+    }
+  }
+  if (grid) {
+    grid.querySelectorAll('.asset-thumb-card').forEach(card => {
+      if (card.getAttribute('data-asset-path') === trimmed) {
+        card.classList.add('active');
+      } else {
+        card.classList.remove('active');
+      }
+    });
+  }
+};
+
 // ----------------------------------------------------
 // PACKAGE MANAGEMENT (SAFARI vs AIRPORT TRANSFERS)
 // ----------------------------------------------------
@@ -466,8 +688,12 @@ window.renderSafariPackagesGrid = function() {
         <h3 class="package-title">${pkg.name}</h3>
         <p class="package-destination"><i class="fas fa-map-marker-alt text-gold"></i> ${pkg.destination}</p>
         <p class="package-description">${pkg.description}</p>
+        <div style="background:#f8f9fa; border:1px solid #e2e8f0; border-left:3px solid var(--gold-accent); padding:0.45rem 0.7rem; border-radius:4px; margin:0.6rem 0 0.8rem 0; font-size:0.75rem; word-break:break-all; color:#555;">
+          <i class="fas fa-image text-gold"></i> <strong>Feature Image Path / URL:</strong><br>
+          <code style="color:var(--primary-green-dark); font-weight:600; font-size:0.73rem;">${pkg.image_url || 'assets/download.jfif'}</code>
+        </div>
         <div class="package-footer">
-          <span class="price-val">KES ${Number(pkg.price).toLocaleString()}</span>
+          <span class="price-val">$${Number(pkg.price).toLocaleString()}</span>
           <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
             <a href="index.html?package=${pkg.id}#book" target="_blank" class="btn btn-green btn-sm" title="Book this package on site"><i class="fas fa-calendar-check"></i> Book Safari</a>
             <button class="btn btn-outline-gold btn-sm" onclick='adminEditPackage(${JSON.stringify(pkg)})'><i class="fas fa-edit"></i> Edit</button>
@@ -508,8 +734,12 @@ window.renderAirportPackagesGrid = function() {
         <h3 class="package-title">${pkg.name}</h3>
         <p class="package-destination"><i class="fas fa-map-marker-alt text-gold"></i> ${pkg.destination}</p>
         <p class="package-description">${pkg.description}</p>
+        <div style="background:#f8f9fa; border:1px solid #e2e8f0; border-left:3px solid var(--gold-accent); padding:0.45rem 0.7rem; border-radius:4px; margin:0.6rem 0 0.8rem 0; font-size:0.75rem; word-break:break-all; color:#555;">
+          <i class="fas fa-image text-gold"></i> <strong>Feature Image Path / URL:</strong><br>
+          <code style="color:var(--primary-green-dark); font-weight:600; font-size:0.73rem;">${pkg.image_url || 'assets/download (2).jfif'}</code>
+        </div>
         <div class="package-footer">
-          <span class="price-val">KES ${Number(pkg.price).toLocaleString()}</span>
+          <span class="price-val">$${Number(pkg.price).toLocaleString()}</span>
           <div style="display:flex; gap:0.35rem; flex-wrap:wrap;">
             <a href="index.html?package=${pkg.id}#book" target="_blank" class="btn btn-green btn-sm" title="Book this airport transfer on site"><i class="fas fa-taxi"></i> Book Transfer</a>
             <button class="btn btn-outline-gold btn-sm" onclick='adminEditPackage(${JSON.stringify(pkg)})'><i class="fas fa-edit"></i> Edit</button>
@@ -533,7 +763,11 @@ window.adminOpenAddPackageModal = function(defaultCat = 'Safari Parks') {
   document.getElementById('pkgFormImg').value = initialImg;
   if (document.getElementById('pkgAssetPicker')) document.getElementById('pkgAssetPicker').value = initialImg;
   if (document.getElementById('pkgImgPreview')) document.getElementById('pkgImgPreview').src = initialImg;
+  if (document.getElementById('pkgImgPathDisplay')) document.getElementById('pkgImgPathDisplay').textContent = initialImg;
   document.getElementById('pkgFormDesc').value = '';
+
+  // Render Visual Asset Gallery
+  renderAssetGallery('pkgAssetGalleryGrid', 'pkgFormImg', 'pkgImgPreview', 'pkgAssetPicker', 'pkgImgPathDisplay', initialImg);
 
   document.getElementById('adminPackageModal').classList.add('active');
 };
@@ -545,33 +779,55 @@ window.adminEditPackage = function(pkg) {
   if (document.getElementById('pkgFormCategory')) document.getElementById('pkgFormCategory').value = pkg.category || 'Safari Parks';
   document.getElementById('pkgFormDays').value = pkg.days;
   document.getElementById('pkgFormPrice').value = pkg.price;
-  document.getElementById('pkgFormImg').value = pkg.image_url;
-  if (document.getElementById('pkgAssetPicker')) document.getElementById('pkgAssetPicker').value = pkg.image_url || '';
-  if (document.getElementById('pkgImgPreview')) document.getElementById('pkgImgPreview').src = pkg.image_url || 'assets/download.jfif';
+  const imgUrl = pkg.image_url || 'assets/download.jfif';
+  document.getElementById('pkgFormImg').value = imgUrl;
+  if (document.getElementById('pkgAssetPicker')) document.getElementById('pkgAssetPicker').value = imgUrl;
+  if (document.getElementById('pkgImgPreview')) document.getElementById('pkgImgPreview').src = imgUrl;
+  if (document.getElementById('pkgImgPathDisplay')) document.getElementById('pkgImgPathDisplay').textContent = imgUrl;
   document.getElementById('pkgFormDesc').value = pkg.description;
+
+  // Render Visual Asset Gallery
+  renderAssetGallery('pkgAssetGalleryGrid', 'pkgFormImg', 'pkgImgPreview', 'pkgAssetPicker', 'pkgImgPathDisplay', imgUrl);
 
   document.getElementById('adminPackageModal').classList.add('active');
 };
 
 window.adminSavePackage = async function(e) {
   e.preventDefault();
+  const saveBtn = e.target.querySelector('button[type="submit"]');
+  const originalHtml = saveBtn ? saveBtn.innerHTML : '';
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+  }
+
   const pkgData = {
     id: document.getElementById('pkgFormId').value,
-    name: document.getElementById('pkgFormName').value,
+    name: document.getElementById('pkgFormName').value.trim(),
     destination: document.getElementById('pkgFormDestination').value,
     category: document.getElementById('pkgFormCategory') ? document.getElementById('pkgFormCategory').value : 'Safari Parks',
     days: parseInt(document.getElementById('pkgFormDays').value || 1),
     price: parseInt(document.getElementById('pkgFormPrice').value || 0),
     price_child: Math.round(parseInt(document.getElementById('pkgFormPrice').value || 0) * 0.5),
-    image_url: document.getElementById('pkgFormImg').value || 'assets/download.jfif',
-    description: document.getElementById('pkgFormDesc').value
+    image_url: (document.getElementById('pkgFormImg').value || 'assets/download.jfif').trim(),
+    description: document.getElementById('pkgFormDesc').value.trim()
   };
 
-  await window.CyrooDB.savePackage(pkgData);
-  closeModal('adminPackageModal');
-  showToastNotification('Package saved successfully!');
-  await refreshAdminData();
-  if (window.loadPackages) window.loadPackages();
+  try {
+    await window.CyrooDB.savePackage(pkgData);
+    closeModal('adminPackageModal');
+    showToastNotification(`Package "${pkgData.name}" saved successfully!`);
+    await refreshAdminData();
+    if (window.loadPackages) await window.loadPackages();
+  } catch (err) {
+    console.error("Error saving package:", err);
+    alert(`Failed to save package: ${err.message || err}`);
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = originalHtml;
+    }
+  }
 };
 
 window.adminDeletePackage = async function(pkgId) {
@@ -586,18 +842,6 @@ window.adminDeletePackage = async function(pkgId) {
 // ----------------------------------------------------
 // DESTINATIONS CATALOG ENGINE & ASSET PICKER
 // ----------------------------------------------------
-window.applyAssetImageToInput = function(selectId, inputId, previewId) {
-  const select = document.getElementById(selectId);
-  const input = document.getElementById(inputId);
-  const preview = document.getElementById(previewId);
-  if (!select || !input) return;
-
-  if (select.value) {
-    input.value = select.value;
-    if (preview) preview.src = select.value;
-  }
-};
-
 window.renderDestinationsGrid = function() {
   const container = document.getElementById('adminDestinationsGrid');
   if (!container) return;
@@ -626,8 +870,9 @@ window.renderDestinationsGrid = function() {
       <div class="package-content">
         <h3 class="package-title">${dest.name}</h3>
         <p style="color:var(--gold-accent); font-weight:600; font-size:0.85rem; margin-bottom:0.5rem;"><i class="fas fa-tag"></i> ${dest.tagline || 'Kenyan Safari'}</p>
-        <div style="background:#f9f8f6; padding:0.6rem 0.8rem; border-radius:4px; margin-bottom:1rem; font-size:0.8rem; word-break:break-all; color:#666;">
-          <i class="fas fa-image text-gold"></i> <strong>Asset Image Path:</strong><br>${dest.image_url}
+        <div style="background:#f8f9fa; border:1px solid #e2e8f0; border-left:3px solid var(--gold-accent); padding:0.45rem 0.7rem; border-radius:4px; margin:0.6rem 0 0.8rem 0; font-size:0.75rem; word-break:break-all; color:#555;">
+          <i class="fas fa-image text-gold"></i> <strong>Feature Image Path / URL:</strong><br>
+          <code style="color:var(--primary-green-dark); font-weight:600; font-size:0.73rem;">${dest.image_url || 'assets/download.jfif'}</code>
         </div>
         <div class="package-footer">
           <div style="display:flex; gap:0.35rem; width:100%;">
@@ -650,9 +895,14 @@ window.adminOpenAddDestinationModal = function() {
   document.getElementById('destFormName').value = '';
   document.getElementById('destFormTagline').value = '';
   document.getElementById('destFormLocation').value = 'Kenya';
-  document.getElementById('destFormImg').value = 'assets/download.jfif';
-  if (document.getElementById('destAssetPicker')) document.getElementById('destAssetPicker').value = 'assets/download.jfif';
-  if (document.getElementById('destImgPreview')) document.getElementById('destImgPreview').src = 'assets/download.jfif';
+  const initialImg = 'assets/download.jfif';
+  document.getElementById('destFormImg').value = initialImg;
+  if (document.getElementById('destAssetPicker')) document.getElementById('destAssetPicker').value = initialImg;
+  if (document.getElementById('destImgPreview')) document.getElementById('destImgPreview').src = initialImg;
+  if (document.getElementById('destImgPathDisplay')) document.getElementById('destImgPathDisplay').textContent = initialImg;
+
+  // Render Visual Asset Gallery
+  renderAssetGallery('destAssetGalleryGrid', 'destFormImg', 'destImgPreview', 'destAssetPicker', 'destImgPathDisplay', initialImg);
 
   document.getElementById('adminDestinationModal').classList.add('active');
 };
@@ -662,29 +912,151 @@ window.adminEditDestination = function(dest) {
   document.getElementById('destFormName').value = dest.name || '';
   document.getElementById('destFormTagline').value = dest.tagline || '';
   document.getElementById('destFormLocation').value = dest.location || '';
-  document.getElementById('destFormImg').value = dest.image_url || 'assets/download.jfif';
+  const imgUrl = dest.image_url || 'assets/download.jfif';
+  document.getElementById('destFormImg').value = imgUrl;
+  if (document.getElementById('destAssetPicker')) document.getElementById('destAssetPicker').value = imgUrl;
+  if (document.getElementById('destImgPreview')) document.getElementById('destImgPreview').src = imgUrl;
+  if (document.getElementById('destImgPathDisplay')) document.getElementById('destImgPathDisplay').textContent = imgUrl;
 
-  if (document.getElementById('destAssetPicker')) document.getElementById('destAssetPicker').value = dest.image_url || '';
-  if (document.getElementById('destImgPreview')) document.getElementById('destImgPreview').src = dest.image_url || 'assets/download.jfif';
+  // Render Visual Asset Gallery
+  renderAssetGallery('destAssetGalleryGrid', 'destFormImg', 'destImgPreview', 'destAssetPicker', 'destImgPathDisplay', imgUrl);
 
   document.getElementById('adminDestinationModal').classList.add('active');
 };
 
 window.adminSaveDestination = async function(e) {
   e.preventDefault();
+  const saveBtn = e.target.querySelector('button[type="submit"]');
+  const originalHtml = saveBtn ? saveBtn.innerHTML : '';
+  if (saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+  }
+
   const destData = {
     id: document.getElementById('destFormId').value,
-    name: document.getElementById('destFormName').value,
-    tagline: document.getElementById('destFormTagline').value,
-    location: document.getElementById('destFormLocation').value,
-    image_url: document.getElementById('destFormImg').value || 'assets/download.jfif'
+    name: document.getElementById('destFormName').value.trim(),
+    tagline: document.getElementById('destFormTagline').value.trim(),
+    location: document.getElementById('destFormLocation').value.trim(),
+    image_url: (document.getElementById('destFormImg').value || 'assets/download.jfif').trim()
   };
 
-  await window.CyrooDB.saveDestination(destData);
-  closeModal('adminDestinationModal');
-  showToastNotification(`Destination "${destData.name}" updated successfully!`);
+  try {
+    await window.CyrooDB.saveDestination(destData);
+    closeModal('adminDestinationModal');
+    showToastNotification(`Destination "${destData.name}" saved successfully!`);
+    await refreshAdminData();
+    if (window.loadDestinations) await window.loadDestinations();
+  } catch (err) {
+    console.error("Error saving destination:", err);
+    alert(`Failed to save destination: ${err.message || err}`);
+  } finally {
+    if (saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = originalHtml;
+    }
+  }
+};
+
+// ----------------------------------------------------
+// SUPABASE CLOUD & NETLIFY SYNC SETTINGS
+// ----------------------------------------------------
+window.adminUpdateDbStatusBadge = function() {
+  const badge = document.getElementById('adminDbStatusBadge');
+  if (!badge || !window.CyrooDB) return;
+
+  const status = window.CyrooDB.getCloudStatus();
+  if (status.isConnected) {
+    badge.innerHTML = `<i class="fas fa-circle text-success" style="font-size:0.65rem;"></i> <strong>Supabase Cloud Connected</strong> &bull; Realtime Active`;
+    badge.style.background = '#d4edda';
+    badge.style.color = '#155724';
+    badge.style.border = '1px solid #c3e6cb';
+  } else if (status.isConfigured) {
+    badge.innerHTML = `<i class="fas fa-exclamation-triangle text-warning" style="font-size:0.65rem;"></i> <strong>Supabase Connecting...</strong> (Check API Key)`;
+    badge.style.background = '#fff3cd';
+    badge.style.color = '#856404';
+    badge.style.border = '1px solid #ffeeba';
+  } else {
+    badge.innerHTML = `<i class="fas fa-database text-warning" style="font-size:0.65rem;"></i> <strong>Local Mode</strong> &bull; Click to Connect Cloud for Netlify Sync`;
+    badge.style.background = '#fff3cd';
+    badge.style.color = '#856404';
+    badge.style.border = '1px solid #ffeeba';
+  }
+};
+
+window.adminOpenDbSettingsModal = function() {
+  const status = window.CyrooDB.getCloudStatus();
+  const notice = document.getElementById('dbModalStatusNotice');
+  const urlInput = document.getElementById('dbSettingsUrl');
+  const keyInput = document.getElementById('dbSettingsKey');
+
+  if (urlInput) urlInput.value = status.url || '';
+  if (keyInput) keyInput.value = status.anonKey || '';
+
+  if (notice) {
+    if (status.isConnected) {
+      notice.style.background = '#d4edda';
+      notice.style.color = '#155724';
+      notice.style.border = '1px solid #c3e6cb';
+      notice.innerHTML = `<i class="fas fa-check-circle"></i> <strong>Supabase Cloud is Active & Connected!</strong><br><small>All package and destination edits automatically synchronize across Netlify and mobile visitors in real-time.</small>`;
+    } else {
+      notice.style.background = '#fff3cd';
+      notice.style.color = '#856404';
+      notice.style.border = '1px solid #ffeeba';
+      notice.innerHTML = `<i class="fas fa-info-circle"></i> <strong>Currently in Local Storage Mode</strong><br><small>Changes are saved only on this browser. Enter your Supabase Project URL and Anon Key below so changes reflect instantly on your Netlify website and mobile phones.</small>`;
+    }
+  }
+
+  document.getElementById('adminDbSettingsModal').classList.add('active');
+};
+
+window.adminSaveDbSettings = async function() {
+  const url = (document.getElementById('dbSettingsUrl')?.value || '').trim();
+  const key = (document.getElementById('dbSettingsKey')?.value || '').trim();
+
+  if (url && !url.includes('.supabase.co')) {
+    alert("Please enter a valid Supabase URL ending in .supabase.co (e.g. https://your-project.supabase.co)");
+    return;
+  }
+
+  const isConnected = window.CyrooDB.setCloudCredentials(url, key);
+  closeModal('adminDbSettingsModal');
+  adminUpdateDbStatusBadge();
+
+  if (isConnected) {
+    showToastNotification("🟢 Connected to Supabase Cloud successfully!");
+  } else if (!url && !key) {
+    showToastNotification("Switched to Local Storage Mode");
+  } else {
+    showToastNotification("Credentials saved. Please ensure your project is active and schema is created.");
+  }
+
   await refreshAdminData();
-  if (window.loadDestinations) window.loadDestinations();
+  if (window.loadDestinations) await window.loadDestinations();
+  if (window.loadPackages) await window.loadPackages();
+};
+
+window.adminSyncLocalToCloud = async function() {
+  const btn = document.getElementById('btnSyncToCloud');
+  const origText = btn ? btn.innerHTML : '';
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Pushing Data...';
+  }
+
+  try {
+    const res = await window.CyrooDB.syncAllToCloud();
+    showToastNotification(`Synced ${res.destinations} destinations & ${res.packages} packages to Supabase Cloud!`);
+    await refreshAdminData();
+  } catch (e) {
+    console.error("Cloud sync error:", e);
+    alert(`Sync failed: ${e.message || e}`);
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = origText;
+    }
+  }
 };
 
 window.adminDeleteDestination = async function(destId) {
@@ -717,7 +1089,7 @@ async function renderPaymentsTable() {
       <td>${p.booking_reference || 'Ref'}</td>
       <td>${p.customer_name}</td>
       <td><span class="badge badge-confirmed">${p.payment_method}</span></td>
-      <td><strong>KES ${Number(p.amount).toLocaleString()}</strong></td>
+      <td><strong>$${Number(p.amount).toLocaleString()}</strong></td>
       <td>${new Date(p.created_at).toLocaleDateString()}</td>
     `;
     tbody.appendChild(tr);

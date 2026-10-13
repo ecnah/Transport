@@ -2,14 +2,32 @@
    CYROO TOURS & SAFARI - Customer Frontend App Engine
 */
 
-document.addEventListener('DOMContentLoaded', async () => {
-  // Mobile Menu Toggle
-  const mobileToggle = document.getElementById('mobileToggle');
+// Mobile Drawer Navigation Controls
+window.toggleMobileNav = function() {
   const navMenu = document.getElementById('navMenu');
+  const overlay = document.getElementById('navOverlay');
+  if (navMenu) {
+    const isActive = navMenu.classList.toggle('active');
+    if (overlay) overlay.classList.toggle('active', isActive);
+    document.body.style.overflow = isActive ? 'hidden' : '';
+  }
+};
 
-  if (mobileToggle && navMenu) {
-    mobileToggle.addEventListener('click', () => {
-      navMenu.classList.toggle('active');
+window.closeMobileNav = function() {
+  const navMenu = document.getElementById('navMenu');
+  const overlay = document.getElementById('navOverlay');
+  if (navMenu) navMenu.classList.remove('active');
+  if (overlay) overlay.classList.remove('active');
+  document.body.style.overflow = '';
+};
+
+document.addEventListener('DOMContentLoaded', async () => {
+  // Mobile Menu Toggle Button
+  const mobileToggle = document.getElementById('mobileToggle');
+  if (mobileToggle) {
+    mobileToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      window.toggleMobileNav();
     });
   }
 
@@ -31,8 +49,22 @@ document.addEventListener('DOMContentLoaded', async () => {
       l.classList.toggle('active', l.getAttribute('href') === `#${targetId}`);
     });
 
-    if (navMenu) navMenu.classList.remove('active');
+    // Sync Mobile Bottom Navigation Items
+    document.querySelectorAll('.mobile-bottom-item[data-target]').forEach(item => {
+      item.classList.toggle('active', item.dataset.target === targetId);
+    });
+
+    window.closeMobileNav();
   };
+
+  // Mobile Bottom Navigation Bar Click Listeners
+  document.querySelectorAll('.mobile-bottom-item[data-target]').forEach(item => {
+    item.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = item.dataset.target;
+      if (target) window.navigateToTab(target);
+    });
+  });
 
   navLinks.forEach(link => {
     link.addEventListener('click', (e) => {
@@ -60,6 +92,39 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Initialize Contact Form
   initContactForm();
+
+  // Instant Realtime Synchronization for Destinations & Packages (Supabase + Cross-Tab)
+  if (window.CyrooDB) {
+    if (window.CyrooDB.subscribeRealtimeDestinations) {
+      window.CyrooDB.subscribeRealtimeDestinations(() => {
+        window.loadDestinations();
+      });
+    }
+    if (window.CyrooDB.subscribeRealtimePackages) {
+      window.CyrooDB.subscribeRealtimePackages(() => {
+        loadPackages();
+      });
+    }
+  }
+
+  // Cross-Tab and Multi-Window Live Sync via LocalStorage storage events
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'cyroo_db_destinations') {
+      window.loadDestinations();
+    }
+    if (e.key === 'cyroo_db_packages') {
+      loadPackages();
+    }
+  });
+
+  window.addEventListener('cyroo_db_updated', (e) => {
+    if (e.detail && e.detail.table === 'destinations') {
+      window.loadDestinations();
+    }
+    if (e.detail && e.detail.table === 'packages') {
+      loadPackages();
+    }
+  });
 
   // Handle URL parameter for pre-selected package
   const urlParams = new URLSearchParams(window.location.search);
@@ -128,7 +193,7 @@ function renderPackagesGrid(packages, categoryFilter = 'all') {
       opt.dataset.name = pkg.name;
       opt.dataset.days = pkg.days;
       opt.dataset.destination = pkg.destination;
-      opt.textContent = `${pkg.name} (${pkg.days} Day${pkg.days > 1 ? 's':''}) - KES ${Number(pkg.price).toLocaleString()} / person`;
+      opt.textContent = `${pkg.name} (${pkg.days} Day${pkg.days > 1 ? 's':''}) - $${Number(pkg.price).toLocaleString()} / person`;
       selectDropdown.appendChild(opt);
     });
   }
@@ -145,22 +210,22 @@ function renderPackagesGrid(packages, categoryFilter = 'all') {
         const opt = document.createElement('option');
         opt.value = pkg.name;
         opt.dataset.fee = pkg.price;
-        opt.textContent = `${pkg.name} (+ KES ${Number(pkg.price).toLocaleString()})`;
+        opt.textContent = `${pkg.name} (+ $${Number(pkg.price).toLocaleString()})`;
         airportServiceDropdown.appendChild(opt);
       });
     } else {
       const defaultServices = [
-        { name: "JKIA Airport Arrival Pickup & Hotel Transfer", price: 3000 },
-        { name: "Nairobi Hotel to JKIA Departure Drop-off", price: 3000 },
-        { name: "Both JKIA Airport Pickup & Drop-off Transfer", price: 5500 },
-        { name: "Wilson Airport Safari Bush Flight Connection", price: 2500 },
-        { name: "VIP Luxury Executive Airport Chauffeur", price: 8000 }
+        { name: "JKIA Airport Arrival Pickup & Hotel Transfer", price: 30 },
+        { name: "Nairobi Hotel to JKIA Departure Drop-off", price: 30 },
+        { name: "Both JKIA Airport Pickup & Drop-off Transfer", price: 55 },
+        { name: "Wilson Airport Safari Bush Flight Connection", price: 25 },
+        { name: "VIP Luxury Executive Airport Chauffeur", price: 80 }
       ];
       defaultServices.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s.name;
         opt.dataset.fee = s.price;
-        opt.textContent = `${s.name} (+ KES ${Number(s.price).toLocaleString()})`;
+        opt.textContent = `${s.name} (+ $${Number(s.price).toLocaleString()})`;
         airportServiceDropdown.appendChild(opt);
       });
     }
@@ -183,22 +248,22 @@ function renderPackagesGrid(packages, categoryFilter = 'all') {
         const opt = document.createElement('option');
         opt.value = pkg.name;
         opt.dataset.fee = pkg.price;
-        opt.textContent = `${pkg.name} (+ KES ${Number(pkg.price).toLocaleString()})`;
+        opt.textContent = `${pkg.name} (+ $${Number(pkg.price).toLocaleString()})`;
         safariAddonDropdown.appendChild(opt);
       });
     } else {
       const defaultServices = [
-        { name: "JKIA Airport Arrival Pickup & Hotel Transfer", price: 3000 },
-        { name: "Nairobi Hotel to JKIA Departure Drop-off", price: 3000 },
-        { name: "Both JKIA Airport Pickup & Drop-off Transfer", price: 5500 },
-        { name: "Wilson Airport Safari Bush Flight Connection", price: 2500 },
-        { name: "VIP Luxury Executive Airport Chauffeur", price: 8000 }
+        { name: "JKIA Airport Arrival Pickup & Hotel Transfer", price: 30 },
+        { name: "Nairobi Hotel to JKIA Departure Drop-off", price: 30 },
+        { name: "Both JKIA Airport Pickup & Drop-off Transfer", price: 55 },
+        { name: "Wilson Airport Safari Bush Flight Connection", price: 25 },
+        { name: "VIP Luxury Executive Airport Chauffeur", price: 80 }
       ];
       defaultServices.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s.name;
         opt.dataset.fee = s.price;
-        opt.textContent = `${s.name} (+ KES ${Number(s.price).toLocaleString()})`;
+        opt.textContent = `${s.name} (+ $${Number(s.price).toLocaleString()})`;
         safariAddonDropdown.appendChild(opt);
       });
     }
@@ -243,7 +308,7 @@ function renderPackagesGrid(packages, categoryFilter = 'all') {
           <div class="package-footer">
             <div class="package-price">
               <span class="price-label">Starting From</span>
-              <span class="price-val">KES ${Number(pkg.price).toLocaleString()} <span>/ person</span></span>
+              <span class="price-val">$${Number(pkg.price).toLocaleString()} <span>/ person</span></span>
             </div>
             <div style="display:flex; gap:0.5rem;">
               <button class="btn btn-outline-gold btn-sm" onclick="openPackageModal('${pkg.id}')">
@@ -295,8 +360,9 @@ window.loadDestinations = async function loadDestinations() {
     if (allGrid) allGrid.innerHTML = '';
 
     destinations.forEach(dest => {
+      const safeName = (dest.name || '').replace(/'/g, "\\'");
       const cardHTML = `
-        <div class="destination-card" onclick="openDestinationPackages('${dest.name}')">
+        <div class="destination-card" onclick="openDestinationPackages('${safeName}')">
           <img src="${dest.image_url}" alt="${dest.name}" class="destination-img" onerror="this.src='assets/download (1).jfif'">
           <div class="destination-overlay">
             <span class="destination-count"><i class="fas fa-compass text-gold"></i> ${dest.location || 'Kenya'}</span>
@@ -358,7 +424,7 @@ window.openPackageModal = async function(packageId) {
     <div style="display:flex; justify-content:space-between; align-items:center; background:var(--primary-green-dark); color:#fff; padding:1.25rem; border-radius:var(--radius-md);">
       <div>
         <span style="font-size:0.85rem; color:var(--warm-beige-dark);">Adult Rate:</span>
-        <div style="font-family:var(--font-heading); font-size:1.6rem; color:var(--gold-accent); font-weight:800;">KES ${Number(pkg.price).toLocaleString()}</div>
+        <div style="font-family:var(--font-heading); font-size:1.6rem; color:var(--gold-accent); font-weight:800;">$${Number(pkg.price).toLocaleString()}</div>
       </div>
       <button class="btn btn-gold" onclick="selectPackageAndBook('${pkg.id}')">
         <i class="fas fa-calendar-check"></i> Book This Safari Now
@@ -498,7 +564,7 @@ function initBookingForm() {
     // Vehicle Surcharge calculation
     let vehicleSurcharge = 0;
     if (vehicleSelect && vehicleSelect.value.includes('Landcruiser VIP')) {
-      vehicleSurcharge = 15000;
+      vehicleSurcharge = 150;
     }
 
     // Airport Service Fee calculation
@@ -531,10 +597,15 @@ function initBookingForm() {
     }
 
     document.getElementById('summaryPkgName').textContent = summaryPkgTitle;
-    document.getElementById('summaryAdults').textContent = isSafariMode && hasSafariPkg ? `${adults} x KES ${adultPrice.toLocaleString()}` : '0 (No Safari)';
-    document.getElementById('summaryChildren').textContent = isSafariMode && hasSafariPkg ? `${children} x KES ${childPrice.toLocaleString()}` : '0';
-    document.getElementById('summaryAirport').textContent = airportFee > 0 ? `KES ${airportFee.toLocaleString()}` : 'No Airport Service';
-    document.getElementById('summaryTotal').textContent = `KES ${totalAmount.toLocaleString()}`;
+    document.getElementById('summaryAdults').textContent = isSafariMode && hasSafariPkg ? `${adults} x $${adultPrice.toLocaleString()}` : '0 (No Safari)';
+    document.getElementById('summaryChildren').textContent = isSafariMode && hasSafariPkg ? `${children} x $${childPrice.toLocaleString()}` : '0';
+    document.getElementById('summaryAirport').textContent = airportFee > 0 ? `$${airportFee.toLocaleString()}` : 'No Airport Service';
+    document.getElementById('summaryTotal').textContent = `$${totalAmount.toLocaleString()}`;
+
+    const submitTotalSpan = document.getElementById('submitBtnTotal');
+    if (submitTotalSpan) {
+      submitTotalSpan.textContent = `$${totalAmount.toLocaleString()}`;
+    }
   }
   window.updatePriceSummary = updatePriceSummary;
 
@@ -591,7 +662,7 @@ function initBookingForm() {
 
     let vehicleSurcharge = 0;
     if (vehicleSelect && vehicleSelect.value.includes('Landcruiser VIP')) {
-      vehicleSurcharge = 15000;
+      vehicleSurcharge = 150;
     }
 
     const safariTotal = isSafariMode ? ((adults * adultPrice) + (children * childPrice)) : 0;
@@ -687,7 +758,7 @@ window.buildWhatsAppBookingMessage = function(booking) {
   }
 
   msg += `━━━━━━━━━━━━━━━━━━━━━━\n`;
-  msg += `💰 *TOTAL AMOUNT:* KES ${Number(booking.total_amount || 0).toLocaleString()}\n`;
+  msg += `💰 *TOTAL AMOUNT:* $${Number(booking.total_amount || 0).toLocaleString()}\n`;
   msg += `💳 *Status:* Pending Confirmation\n`;
   msg += `━━━━━━━━━━━━━━━━━━━━━━\n`;
   msg += `Hello Cyroo Tours, I have just completed this booking on your website. Please confirm availability and send payment instructions. Thank you!`;
@@ -737,7 +808,7 @@ function showBookingConfirmationModal(booking) {
   let tableRowsHTML = '';
   
   if (hasSafari) {
-    const safariFee = booking.safari_fee || (booking.total_amount - (hasAirport ? (booking.airport_fee || 3000) : 0));
+    const safariFee = booking.safari_fee || (booking.total_amount - (hasAirport ? (booking.airport_fee || 30) : 0));
     const adultUnitPrice = booking.adults > 0 ? Math.round(safariFee / Math.max(1, (booking.adults + (booking.children * 0.5)))) : 0;
     tableRowsHTML += `
       <tr>
@@ -746,8 +817,8 @@ function showBookingConfirmationModal(booking) {
           <small style="color:#666;">Accommodation: ${booking.accommodation || 'Safari Lodge'} | Vehicle: ${booking.transport}</small>
         </td>
         <td>${booking.adults} Adults</td>
-        <td style="text-align:right;">KES ${adultUnitPrice.toLocaleString()}</td>
-        <td style="text-align:right;">KES ${(adultUnitPrice * booking.adults).toLocaleString()}</td>
+        <td style="text-align:right;">$${adultUnitPrice.toLocaleString()}</td>
+        <td style="text-align:right;">$${(adultUnitPrice * booking.adults).toLocaleString()}</td>
       </tr>
     `;
     if (booking.children > 0) {
@@ -756,15 +827,15 @@ function showBookingConfirmationModal(booking) {
         <tr>
           <td>Child Safari Rate (50% Discount)</td>
           <td>${booking.children} Children</td>
-          <td style="text-align:right;">KES ${childUnitPrice.toLocaleString()}</td>
-          <td style="text-align:right;">KES ${(childUnitPrice * booking.children).toLocaleString()}</td>
+          <td style="text-align:right;">$${childUnitPrice.toLocaleString()}</td>
+          <td style="text-align:right;">$${(childUnitPrice * booking.children).toLocaleString()}</td>
         </tr>
       `;
     }
   }
 
   if (hasAirport) {
-    const fee = booking.airport_fee || (hasSafari ? 3000 : booking.total_amount);
+    const fee = booking.airport_fee || (hasSafari ? 30 : booking.total_amount);
     tableRowsHTML += `
       <tr>
         <td>
@@ -772,8 +843,8 @@ function showBookingConfirmationModal(booking) {
           <small style="color:#666;">${booking.airport_service}</small>
         </td>
         <td>1 Transfer Service</td>
-        <td style="text-align:right;">KES ${Number(fee).toLocaleString()}</td>
-        <td style="text-align:right;">KES ${Number(fee).toLocaleString()}</td>
+        <td style="text-align:right;">$${Number(fee).toLocaleString()}</td>
+        <td style="text-align:right;">$${Number(fee).toLocaleString()}</td>
       </tr>
     `;
   }
@@ -786,8 +857,8 @@ function showBookingConfirmationModal(booking) {
           <small style="color:#666;">Executive Luxury Vehicle Upgrade</small>
         </td>
         <td>1 Vehicle Upgrade</td>
-        <td style="text-align:right;">KES 15,000</td>
-        <td style="text-align:right;">KES 15,000</td>
+        <td style="text-align:right;">$150</td>
+        <td style="text-align:right;">$150</td>
       </tr>
     `;
   }
@@ -814,12 +885,12 @@ function showBookingConfirmationModal(booking) {
         </div>
       </div>
 
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:1.5rem; background:#fcfbfa; padding:1.25rem; border-radius:6px; border:1px solid #eee;">
+      <div class="invoice-grid">
         <div>
           <strong style="color:var(--primary-green-dark); text-transform:uppercase; font-size:0.8rem; letter-spacing:1px;">CUSTOMER DETAILS</strong>
           <p style="margin-top:0.4rem;"><strong>Name:</strong> ${booking.customer_name}</p>
           <p><strong>Phone:</strong> ${booking.customer_phone}</p>
-          <p><strong>Email:</strong> ${booking.customer_email}</p>
+          <p style="word-break:break-all;"><strong>Email:</strong> ${booking.customer_email}</p>
         </div>
         <div>
           <strong style="color:var(--primary-green-dark); text-transform:uppercase; font-size:0.8rem; letter-spacing:1px;">SERVICE & TRAVEL DETAILS</strong>
@@ -829,40 +900,42 @@ function showBookingConfirmationModal(booking) {
         </div>
       </div>
 
-      <table class="invoice-table">
-        <thead>
-          <tr>
-            <th>Item Description</th>
-            <th>Qty</th>
-            <th style="text-align:right;">Unit Price (KES)</th>
-            <th style="text-align:right;">Total (KES)</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${tableRowsHTML}
-        </tbody>
-      </table>
+      <div class="invoice-table-wrapper">
+        <table class="invoice-table">
+          <thead>
+            <tr>
+              <th>Item Description</th>
+              <th>Qty</th>
+              <th style="text-align:right;">Unit Price ($)</th>
+              <th style="text-align:right;">Total ($)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRowsHTML}
+          </tbody>
+        </table>
+      </div>
 
       <div class="invoice-totals">
         <div class="invoice-totals-row">
           <span>Subtotal:</span>
-          <span>KES ${Number(booking.total_amount).toLocaleString()}</span>
+          <span>$${Number(booking.total_amount).toLocaleString()}</span>
         </div>
         <div class="invoice-totals-row">
           <span>Discount:</span>
-          <span>KES 0</span>
+          <span>$0</span>
         </div>
         <div class="invoice-totals-row grand-total">
           <span>Total Payable:</span>
-          <span>KES ${Number(booking.total_amount).toLocaleString()}</span>
+          <span>$${Number(booking.total_amount).toLocaleString()}</span>
         </div>
         <div class="invoice-totals-row">
           <span>Amount Paid:</span>
-          <span style="color:#28a745; font-weight:700;">KES ${Number(booking.amount_paid || 0).toLocaleString()}</span>
+          <span style="color:#28a745; font-weight:700;">$${Number(booking.amount_paid || 0).toLocaleString()}</span>
         </div>
         <div class="invoice-totals-row">
           <span>Balance Due:</span>
-          <span style="color:#dc3545; font-weight:700;">KES ${Number(booking.balance || booking.total_amount).toLocaleString()}</span>
+          <span style="color:#dc3545; font-weight:700;">$${Number(booking.balance || booking.total_amount).toLocaleString()}</span>
         </div>
       </div>
 
@@ -885,22 +958,65 @@ function showBookingConfirmationModal(booking) {
   modal.classList.add('active');
 }
 
-// Download PDF Invoice Generator Function
+// Download PDF Invoice Generator Function (Fixes Blank Page issue)
 window.downloadInvoicePDF = function() {
   const element = document.getElementById('invoicePDFSheet');
-  if (!element) return;
+  if (!element) {
+    alert("Invoice element not found.");
+    return;
+  }
 
   if (window.html2pdf) {
+    // Clone element into offscreen container to avoid scroll / modal clipping issues
+    const clone = element.cloneNode(true);
+    clone.style.position = 'absolute';
+    clone.style.left = '-9999px';
+    clone.style.top = '0px';
+    clone.style.width = '750px';
+    clone.style.padding = '30px';
+    clone.style.background = '#ffffff';
+    clone.style.color = '#333333';
+    
+    // Ensure all grid columns in PDF clone display side-by-side (2 columns)
+    const cloneGrid = clone.querySelector('.invoice-grid');
+    if (cloneGrid) {
+      cloneGrid.style.display = 'grid';
+      cloneGrid.style.gridTemplateColumns = '1fr 1fr';
+      cloneGrid.style.gap = '1.25rem';
+    }
+
+    document.body.appendChild(clone);
+
+    const bookingRef = element.closest('.modal')?.dataset?.bookingRef || 'Invoice';
+    const filename = `Cyroo_Safari_${bookingRef}_${Date.now()}.pdf`;
+
     const opt = {
-      margin:       0.5,
-      filename:     `Cyroo_Safari_Invoice_${Date.now()}.pdf`,
+      margin:       [0.3, 0.3, 0.3, 0.3],
+      filename:     filename,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2 },
+      html2canvas:  { 
+        scale: 2, 
+        useCORS: true, 
+        allowTaint: true, 
+        scrollY: 0, 
+        scrollX: 0,
+        logging: false 
+      },
       jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
     };
-    window.html2pdf().set(opt).from(element).save();
+
+    window.html2pdf().set(opt).from(clone).save().then(() => {
+      if (document.body.contains(clone)) {
+        document.body.removeChild(clone);
+      }
+    }).catch(err => {
+      console.error("PDF Export Error:", err);
+      if (document.body.contains(clone)) {
+        document.body.removeChild(clone);
+      }
+      window.print();
+    });
   } else {
-    // Standard Print Fallback
     window.print();
   }
 };
@@ -956,18 +1072,18 @@ function initBookingTracking() {
           ${booking.airport_service ? `<div><strong style="color:var(--text-muted); font-size:0.8rem;">AIRPORT SERVICE</strong><p style="font-size:1rem; font-weight:600; color:var(--primary-green-dark);"><i class="fas fa-plane"></i> ${booking.airport_service}</p></div>` : ''}
         </div>
 
-        <div style="background:var(--warm-beige); padding:1.5rem; border-radius:var(--radius-md); margin-bottom:2rem;">
+        <div class="invoice-totals" style="background:var(--warm-beige); padding:1.5rem; border-radius:var(--radius-md); margin-bottom:2rem;">
           <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem;">
             <span>Total Price:</span>
-            <strong>KES ${Number(booking.total_amount).toLocaleString()}</strong>
+            <strong>$${Number(booking.total_amount).toLocaleString()}</strong>
           </div>
           <div style="display:flex; justify-content:space-between; margin-bottom:0.5rem; color:#28a745;">
             <span>Amount Paid:</span>
-            <strong>KES ${Number(booking.amount_paid || 0).toLocaleString()}</strong>
+            <strong>$${Number(booking.amount_paid || 0).toLocaleString()}</strong>
           </div>
           <div style="display:flex; justify-content:space-between; font-size:1.2rem; font-weight:800; color:var(--primary-green-dark); border-top:1px solid #ddd; padding-top:0.5rem;">
             <span>Balance Due:</span>
-            <span style="color:${booking.balance > 0 ? '#dc3545' : '#28a745'}">KES ${Number(booking.balance || (booking.total_amount - (booking.amount_paid||0))).toLocaleString()}</span>
+            <span style="color:${booking.balance > 0 ? '#dc3545' : '#28a745'}">$${Number(booking.balance || (booking.total_amount - (booking.amount_paid||0))).toLocaleString()}</span>
           </div>
         </div>
 

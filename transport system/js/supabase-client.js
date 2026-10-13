@@ -7,18 +7,28 @@
   
   // Check if Supabase CDN SDK is available
   let sbClient = null;
-  const isSupabaseConfigured = cfg.supabaseUrl && cfg.supabaseUrl.includes(".supabase.co") && cfg.supabaseAnonKey && cfg.supabaseAnonKey !== "your-anon-key";
 
-  if (window.supabase && isSupabaseConfigured) {
-    try {
-      sbClient = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey);
-      console.log("Supabase Client Initialized Connected to Remote Cloud.");
-    } catch (e) {
-      console.warn("Failed to initialize Supabase client, falling back to local database mode:", e);
+  function initClient() {
+    const sbUrl = (localStorage.getItem("cyroo_sb_url") || cfg.supabaseUrl || "").trim();
+    const sbKey = (localStorage.getItem("cyroo_sb_key") || cfg.supabaseAnonKey || "").trim();
+    const isConfigured = sbUrl && sbUrl.includes(".supabase.co") && sbKey && sbKey !== "your-anon-key";
+
+    if (window.supabase && isConfigured) {
+      try {
+        sbClient = window.supabase.createClient(sbUrl, sbKey);
+        console.log("Supabase Client Initialized Connected to Remote Cloud:", sbUrl);
+      } catch (e) {
+        console.warn("Failed to initialize Supabase client, falling back to local database mode:", e);
+        sbClient = null;
+      }
+    } else {
+      sbClient = null;
+      console.log("Operating in Local / Offline Database Mode with LocalStorage persistence.");
     }
-  } else {
-    console.log("Operating in Local / Offline Database Mode with LocalStorage persistence.");
+    return sbClient;
   }
+
+  initClient();
 
   // Initial Seed Users
   const defaultUsers = [
@@ -70,6 +80,13 @@
     });
   }
 
+  // Ensure Currency migration to USD in LocalStorage
+  if (localStorage.getItem('cyroo_db_currency') !== 'USD') {
+    localStorage.removeItem('cyroo_db_packages');
+    localStorage.removeItem('cyroo_db_bookings');
+    localStorage.setItem('cyroo_db_currency', 'USD');
+  }
+
   // Initialize Local Mock Stores
   LocalDB.set('packages', sanitizeAssets(LocalDB.get('packages', cfg.seedPackages)));
   LocalDB.set('destinations', sanitizeAssets(LocalDB.get('destinations', cfg.seedDestinations)));
@@ -89,40 +106,114 @@
     // ----------------------------------------------------
     async getPackages() {
       if (sbClient) {
-        const { data, error } = await sbClient.from('safari_packages').select('*').order('created_at', { ascending: false });
-        if (!error && data && data.length > 0) return sanitizeAssets(data);
+        try {
+          const { data, error } = await sbClient.from('safari_packages').select('*').order('created_at', { ascending: false });
+          if (!error && data && data.length > 0) {
+            const sanitized = sanitizeAssets(data);
+            LocalDB.set('packages', sanitized);
+            return sanitized;
+          }
+        } catch (e) {
+          console.warn("Error loading packages from Supabase, using local fallback:", e);
+        }
       }
       return sanitizeAssets(LocalDB.get('packages', cfg.seedPackages));
     },
 
     async savePackage(pkgData) {
+      const origId = pkgData.id;
+      let savedRecord = null;
+
       if (sbClient) {
-        if (pkgData.id && !pkgData.id.startsWith("pkg-")) {
-          const { data, error } = await sbClient.from('safari_packages').update(pkgData).eq('id', pkgData.id).select().single();
-          if (!error) return data;
-        } else {
-          delete pkgData.id;
-          const { data, error } = await sbClient.from('safari_packages').insert([pkgData]).select().single();
-          if (!error) return data;
+        try {
+          const { id, ...updateFields } = pkgData;
+          const isUuid = typeof origId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(origId);
+
+          let existingRow = null;
+          if (origId && isUuid) {
+            const { data: byId } = await sbClient.from('safari_packages').select('id').eq('id', origId).maybeSingle();
+            existingRow = byId;
+          }
+          if (!existingRow && pkgData.name) {
+            const { data: byName } = await sbClient.from('safari_packages').select('id').ilike('name', pkgData.name).maybeSingle();
+            existingRow = byName;
+          }
+
+          if (existingRow && existingRow.id) {
+            const { data: updated, error: updateErr } = await sbClient
+              .from('safari_packages')
+              .update(updateFields)
+              .eq('id', existingRow.id)
+              .select()
+              .single();
+
+            if (updateErr) {
+              console.error("Supabase package update error:", updateErr);
+            } else {
+              savedRecord = updated;
+            }
+          } else {
+            const { data: inserted, error: insertErr } = await sbClient
+              .from('safari_packages')
+              .insert([updateFields])
+              .select()
+              .single();
+
+            if (insertErr) {
+              console.error("Supabase package insert error:", insertErr);
+            } else {
+              savedRecord = inserted;
+            }
+          }
+        } catch (e) {
+          console.error("Supabase package save exception:", e);
         }
       }
-      
+
+      // Always update LocalDB in-place to keep UI and cache synchronized
       const pkgs = LocalDB.get('packages', cfg.seedPackages);
-      if (pkgData.id) {
-        const index = pkgs.findIndex(p => p.id === pkgData.id);
-        if (index !== -1) pkgs[index] = { ...pkgs[index], ...pkgData };
-        else pkgs.unshift(pkgData);
-      } else {
-        pkgData.id = `pkg-local-${Date.now()}`;
-        pkgs.unshift(pkgData);
+      const targetId = (savedRecord && savedRecord.id) ? savedRecord.id : origId;
+      const targetName = (pkgData.name || '').trim().toLowerCase();
+
+      let index = -1;
+      if (origId) {
+        index = pkgs.findIndex(p => p.id === origId || (savedRecord && p.id === savedRecord.id));
       }
+      if (index === -1 && targetName) {
+        index = pkgs.findIndex(p => (p.name || '').trim().toLowerCase() === targetName);
+      }
+
+      const mergedPkg = {
+        ...pkgData,
+        id: targetId || (index !== -1 ? pkgs[index].id : `pkg-local-${Date.now()}`)
+      };
+
+      if (index !== -1) {
+        pkgs[index] = { ...pkgs[index], ...mergedPkg };
+      } else {
+        pkgs.unshift(mergedPkg);
+      }
+
       LocalDB.set('packages', pkgs);
-      return pkgData;
+      return savedRecord || mergedPkg;
     },
 
     async deletePackage(pkgId) {
-      if (sbClient && !pkgId.startsWith("pkg-")) {
-        await sbClient.from('safari_packages').delete().eq('id', pkgId);
+      if (sbClient) {
+        try {
+          const isUuid = typeof pkgId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pkgId);
+          if (isUuid) {
+            await sbClient.from('safari_packages').delete().eq('id', pkgId);
+          } else {
+            const pkgs = LocalDB.get('packages', cfg.seedPackages);
+            const found = pkgs.find(p => p.id === pkgId);
+            if (found && found.name) {
+              await sbClient.from('safari_packages').delete().ilike('name', found.name);
+            }
+          }
+        } catch (e) {
+          console.error("Supabase package delete error:", e);
+        }
       }
       const pkgs = LocalDB.get('packages', cfg.seedPackages).filter(p => p.id !== pkgId);
       LocalDB.set('packages', pkgs);
@@ -134,40 +225,124 @@
     // ----------------------------------------------------
     async getDestinations() {
       if (sbClient) {
-        const { data, error } = await sbClient.from('destinations').select('*');
-        if (!error && data && data.length > 0) return sanitizeAssets(data);
+        try {
+          const { data, error } = await sbClient.from('destinations').select('*').order('name');
+          if (!error && data && data.length > 0) {
+            const sanitized = sanitizeAssets(data);
+            LocalDB.set('destinations', sanitized);
+            return sanitized;
+          }
+        } catch (e) {
+          console.warn("Error loading destinations from Supabase, using local fallback:", e);
+        }
       }
       return sanitizeAssets(LocalDB.get('destinations', cfg.seedDestinations));
     },
 
     async saveDestination(destData) {
+      const origId = destData.id;
+      let savedRecord = null;
+
       if (sbClient) {
-        if (destData.id && !destData.id.startsWith("dest-")) {
-          const { data, error } = await sbClient.from('destinations').update(destData).eq('id', destData.id).select().single();
-          if (!error) return data;
-        } else {
-          delete destData.id;
-          const { data, error } = await sbClient.from('destinations').insert([destData]).select().single();
-          if (!error) return data;
+        try {
+          const payload = {
+            name: destData.name,
+            tagline: destData.tagline || '',
+            location: destData.location || 'Kenya',
+            image_url: destData.image_url || 'assets/download.jfif'
+          };
+          if (destData.description) payload.description = destData.description;
+
+          const isUuid = typeof origId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(origId);
+
+          let existingRow = null;
+          if (origId && isUuid) {
+            const { data: byId } = await sbClient.from('destinations').select('id').eq('id', origId).maybeSingle();
+            existingRow = byId;
+          }
+          if (!existingRow && destData.name) {
+            const { data: byName } = await sbClient.from('destinations').select('id').ilike('name', destData.name).maybeSingle();
+            existingRow = byName;
+          }
+
+          if (existingRow && existingRow.id) {
+            const { data: updated, error: updateErr } = await sbClient
+              .from('destinations')
+              .update(payload)
+              .eq('id', existingRow.id)
+              .select()
+              .single();
+
+            if (updateErr) {
+              console.error("Supabase destination update error:", updateErr);
+            } else {
+              savedRecord = updated;
+            }
+          } else {
+            const { data: inserted, error: insertErr } = await sbClient
+              .from('destinations')
+              .insert([payload])
+              .select()
+              .single();
+
+            if (insertErr) {
+              console.error("Supabase destination insert error:", insertErr);
+            } else {
+              savedRecord = inserted;
+            }
+          }
+        } catch (e) {
+          console.error("Supabase destination save exception:", e);
         }
       }
-      
+
+      // Always update LocalDB in-place so local state is immediately consistent
       const dests = LocalDB.get('destinations', cfg.seedDestinations);
-      if (destData.id) {
-        const index = dests.findIndex(d => d.id === destData.id);
-        if (index !== -1) dests[index] = { ...dests[index], ...destData };
-        else dests.unshift(destData);
-      } else {
-        destData.id = `dest-local-${Date.now()}`;
-        dests.unshift(destData);
+      const targetId = (savedRecord && savedRecord.id) ? savedRecord.id : origId;
+      const targetName = (destData.name || '').trim().toLowerCase();
+
+      let index = -1;
+      if (origId) {
+        index = dests.findIndex(d => d.id === origId || (savedRecord && d.id === savedRecord.id));
       }
+      if (index === -1 && targetName) {
+        index = dests.findIndex(d => (d.name || '').trim().toLowerCase() === targetName);
+      }
+
+      const mergedData = {
+        id: targetId || (index !== -1 ? dests[index].id : `dest-local-${Date.now()}`),
+        name: destData.name,
+        tagline: destData.tagline || '',
+        location: destData.location || 'Kenya',
+        image_url: destData.image_url || 'assets/download.jfif'
+      };
+
+      if (index !== -1) {
+        dests[index] = { ...dests[index], ...mergedData };
+      } else {
+        dests.unshift(mergedData);
+      }
+
       LocalDB.set('destinations', dests);
-      return destData;
+      return savedRecord || mergedData;
     },
 
     async deleteDestination(destId) {
-      if (sbClient && !destId.startsWith("dest-")) {
-        await sbClient.from('destinations').delete().eq('id', destId);
+      if (sbClient) {
+        try {
+          const isUuid = typeof destId === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(destId);
+          if (isUuid) {
+            await sbClient.from('destinations').delete().eq('id', destId);
+          } else {
+            const dests = LocalDB.get('destinations', cfg.seedDestinations);
+            const found = dests.find(d => d.id === destId);
+            if (found && found.name) {
+              await sbClient.from('destinations').delete().ilike('name', found.name);
+            }
+          }
+        } catch (e) {
+          console.error("Supabase destination delete error:", e);
+        }
       }
       const dests = LocalDB.get('destinations', cfg.seedDestinations).filter(d => d.id !== destId);
       LocalDB.set('destinations', dests);
@@ -222,6 +397,9 @@
     // ----------------------------------------------------
     // BOOKINGS
     // ----------------------------------------------------
+    // ----------------------------------------------------
+    // BOOKINGS
+    // ----------------------------------------------------
     async getBookings() {
       if (sbClient) {
         const { data, error } = await sbClient
@@ -233,11 +411,11 @@
           return data.map(b => ({
             id: b.id,
             booking_reference: b.booking_reference,
-            customer_name: b.customers?.full_name || b.customer_name || 'Valued Guest',
-            customer_phone: b.customers?.phone || b.customer_phone || '',
-            customer_email: b.customers?.email || b.customer_email || '',
-            package_name: b.safari_packages?.name || b.package_name || 'Safari Package',
-            package_category: b.safari_packages?.category || 'Safari Parks',
+            customer_name: b.customer_name || b.customers?.full_name || 'Valued Guest',
+            customer_phone: b.customer_phone || b.customers?.phone || '',
+            customer_email: b.customer_email || b.customers?.email || '',
+            package_name: b.package_name || b.safari_packages?.name || 'Safari Package',
+            package_category: b.safari_packages?.category || (b.package_name?.includes('Airport') ? 'Airport Services' : 'Safari Parks'),
             destination: b.destination || 'Kenyan Reserve',
             travel_date: b.travel_date,
             return_date: b.return_date,
@@ -267,7 +445,7 @@
       const cleanPhone = (phone || '').trim().replace(/[^0-9]/g, '');
 
       return allBookings.find(b => {
-        const matchRef = b.booking_reference.toUpperCase() === cleanRef;
+        const matchRef = (b.booking_reference || '').toUpperCase() === cleanRef;
         const bPhoneClean = (b.customer_phone || '').replace(/[^0-9]/g, '');
         const matchPhone = bPhoneClean.endsWith(cleanPhone.slice(-7)) || cleanPhone.endsWith(bPhoneClean.slice(-7));
         return matchRef && matchPhone;
@@ -287,7 +465,7 @@
         customer_phone: bookingPayload.phone,
         customer_email: bookingPayload.email,
         package_name: bookingPayload.package_name,
-        destination: bookingPayload.destination_name,
+        destination: bookingPayload.destination_name || bookingPayload.destination,
         travel_date: bookingPayload.travel_date,
         return_date: bookingPayload.return_date,
         adults: parseInt(bookingPayload.adults || 1),
@@ -308,24 +486,90 @@
 
       if (sbClient) {
         try {
-          // Attempt edge function invoke
-          const { data, error } = await sbClient.functions.invoke('create-booking', {
-            body: bookingPayload
-          });
-          if (!error && data && data.booking) {
-            return data.booking;
+          // 1. Check or Insert Customer Record
+          let custId = null;
+          const { data: existingCust } = await sbClient.from('customers').select('id').eq('email', bookingPayload.email).maybeSingle();
+          if (existingCust && existingCust.id) {
+            custId = existingCust.id;
+          } else {
+            const { data: newCust } = await sbClient.from('customers').insert([{
+              full_name: bookingPayload.full_name,
+              email: bookingPayload.email,
+              phone: bookingPayload.phone
+            }]).select('id').single();
+            if (newCust) custId = newCust.id;
+          }
+
+          // 2. Determine valid package_id UUID if provided
+          let pkgUuid = (bookingPayload.package_id && bookingPayload.package_id.length === 36 && !bookingPayload.package_id.startsWith('pkg-')) 
+            ? bookingPayload.package_id 
+            : null;
+
+          const sbBookingObj = {
+            booking_reference,
+            customer_id: custId,
+            package_id: pkgUuid,
+            customer_name: bookingPayload.full_name,
+            customer_phone: bookingPayload.phone,
+            customer_email: bookingPayload.email,
+            package_name: bookingPayload.package_name,
+            destination: bookingPayload.destination_name || bookingPayload.destination,
+            travel_date: bookingPayload.travel_date,
+            return_date: bookingPayload.return_date,
+            adults: parseInt(bookingPayload.adults || 1),
+            children: parseInt(bookingPayload.children || 0),
+            accommodation: bookingPayload.accommodation || "Standard Safari Lodge",
+            transport: bookingPayload.transport || "4x4 Safari Landcruiser",
+            airport_service: bookingPayload.airport_service || "No Airport Transfer",
+            special_requests: bookingPayload.special_requests || "",
+            subtotal: bookingPayload.total_amount,
+            discount: 0,
+            total_amount: bookingPayload.total_amount,
+            amount_paid: 0,
+            balance: bookingPayload.total_amount,
+            payment_status: "Unpaid",
+            booking_status: "Pending"
+          };
+
+          const { data: insertedSbBooking, error: sbErr } = await sbClient.from('bookings').insert([sbBookingObj]).select().single();
+          if (!sbErr && insertedSbBooking) {
+            // 3. Insert Invoice
+            const invoiceNumber = `INV-${year}-${seq}`;
+            await sbClient.from('invoices').insert([{
+              invoice_number: invoiceNumber,
+              booking_id: insertedSbBooking.id,
+              booking_reference,
+              customer_name: bookingPayload.full_name,
+              customer_phone: bookingPayload.phone,
+              customer_email: bookingPayload.email,
+              package_name: bookingPayload.package_name,
+              destination: bookingPayload.destination_name || bookingPayload.destination,
+              travel_date: bookingPayload.travel_date,
+              return_date: bookingPayload.return_date,
+              adults: parseInt(bookingPayload.adults || 1),
+              children: parseInt(bookingPayload.children || 0),
+              subtotal: bookingPayload.total_amount,
+              discount: 0,
+              total_amount: bookingPayload.total_amount,
+              amount_paid: 0,
+              balance_due: bookingPayload.total_amount,
+              payment_status: "Unpaid"
+            }]);
+
+            newBooking.id = insertedSbBooking.id;
+            newBooking.booking_reference = insertedSbBooking.booking_reference || booking_reference;
           }
         } catch (e) {
-          console.warn("Edge function fallback, storing directly:", e);
+          console.warn("Direct Supabase booking insert error, continuing with local sync:", e);
         }
       }
 
-      // Local persistence fallback
+      // Local persistence fallback & sync
       const bookings = LocalDB.get('bookings', cfg.seedBookings);
       bookings.unshift(newBooking);
       LocalDB.set('bookings', bookings);
 
-      // Save user to users store automatically
+      // Save user to local users store automatically
       const users = LocalDB.get('users', defaultUsers);
       if (!users.find(u => u.email === bookingPayload.email)) {
         users.unshift({
@@ -339,17 +583,17 @@
         LocalDB.set('users', users);
       }
 
-      // Automatic Invoice generation
+      // Local Invoice generation
       const invoiceNumber = `INV-${year}-${seq}`;
       const invoice = {
         id: `inv-${Date.now()}`,
         invoice_number: invoiceNumber,
-        booking_reference,
+        booking_reference: newBooking.booking_reference,
         customer_name: bookingPayload.full_name,
         customer_phone: bookingPayload.phone,
         customer_email: bookingPayload.email,
         package_name: bookingPayload.package_name,
-        destination: bookingPayload.destination_name,
+        destination: bookingPayload.destination_name || bookingPayload.destination,
         travel_date: bookingPayload.travel_date,
         return_date: bookingPayload.return_date,
         adults: bookingPayload.adults,
@@ -401,7 +645,7 @@
       payments.unshift(newPayment);
       LocalDB.set('payments', payments);
 
-      // Update Booking Balance & Payment Status
+      // Update Booking Balance & Payment Status locally
       const bookings = LocalDB.get('bookings', cfg.seedBookings);
       const b = bookings.find(x => x.id === paymentData.booking_id || x.booking_reference === paymentData.booking_reference);
       if (b) {
@@ -413,6 +657,35 @@
           b.payment_status = "Partially Paid";
         }
         LocalDB.set('bookings', bookings);
+      }
+
+      if (sbClient) {
+        try {
+          let bUuid = paymentData.booking_id;
+          if (bUuid && bUuid.startsWith('b-')) bUuid = null;
+          await sbClient.from('payments').insert([{
+            booking_id: bUuid,
+            booking_reference: paymentData.booking_reference,
+            customer_name: paymentData.customer_name || 'Valued Guest',
+            amount: paymentData.amount,
+            payment_method: paymentData.payment_method || 'M-Pesa',
+            transaction_reference: paymentData.transaction_reference || '',
+            notes: paymentData.notes || ''
+          }]);
+
+          if (bUuid) {
+            const newPaid = Number(b?.amount_paid || paymentData.amount);
+            const newBal = Math.max(0, Number(b?.total_amount || 0) - newPaid);
+            const newPayStatus = newBal === 0 ? 'Paid' : 'Partially Paid';
+            await sbClient.from('bookings').update({
+              amount_paid: newPaid,
+              balance: newBal,
+              payment_status: newPayStatus
+            }).eq('id', bUuid);
+          }
+        } catch (e) {
+          console.warn("Supabase payment record error:", e);
+        }
       }
       return newPayment;
     },
@@ -448,12 +721,16 @@
     // Realtime Listener Registration
     subscribeRealtimeBookings(callback) {
       if (sbClient) {
-        const channel = sbClient.channel('realtime_bookings')
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bookings' }, payload => {
-            callback(payload.new);
-          })
-          .subscribe();
-        return channel;
+        try {
+          const channel = sbClient.channel('realtime_bookings')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bookings' }, payload => {
+              callback(payload.new);
+            })
+            .subscribe();
+          return channel;
+        } catch (e) {
+          console.warn("Realtime bookings subscription warning:", e);
+        }
       }
 
       // Local broadcast fallback
@@ -464,6 +741,107 @@
       };
       window.addEventListener('cyroo_db_updated', handler);
       return { unsubscribe: () => window.removeEventListener('cyroo_db_updated', handler) };
+    },
+
+    subscribeRealtimeDestinations(callback) {
+      if (sbClient) {
+        try {
+          const channel = sbClient.channel('realtime_destinations')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'destinations' }, async (payload) => {
+              console.log("Realtime destinations change:", payload);
+              const { data } = await sbClient.from('destinations').select('*').order('name');
+              if (data && data.length > 0) {
+                const sanitized = sanitizeAssets(data);
+                LocalDB.set('destinations', sanitized);
+                if (callback) callback(sanitized);
+              }
+            })
+            .subscribe();
+          return channel;
+        } catch (e) {
+          console.warn("Realtime destinations subscription warning:", e);
+        }
+      }
+
+      const handler = (e) => {
+        if (e.detail && e.detail.table === 'destinations') {
+          if (callback) callback(e.detail.data);
+        }
+      };
+      window.addEventListener('cyroo_db_updated', handler);
+      return { unsubscribe: () => window.removeEventListener('cyroo_db_updated', handler) };
+    },
+
+    subscribeRealtimePackages(callback) {
+      if (sbClient) {
+        try {
+          const channel = sbClient.channel('realtime_packages')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'safari_packages' }, async (payload) => {
+              console.log("Realtime packages change:", payload);
+              const { data } = await sbClient.from('safari_packages').select('*').order('created_at', { ascending: false });
+              if (data && data.length > 0) {
+                const sanitized = sanitizeAssets(data);
+                LocalDB.set('packages', sanitized);
+                if (callback) callback(sanitized);
+              }
+            })
+            .subscribe();
+          return channel;
+        } catch (e) {
+          console.warn("Realtime packages subscription warning:", e);
+        }
+      }
+
+      const handler = (e) => {
+        if (e.detail && e.detail.table === 'packages') {
+          if (callback) callback(e.detail.data);
+        }
+      };
+      window.addEventListener('cyroo_db_updated', handler);
+      return { unsubscribe: () => window.removeEventListener('cyroo_db_updated', handler) };
+    },
+
+    // Cloud Connection & Netlify Management Helpers
+    getCloudStatus() {
+      const sbUrl = (localStorage.getItem("cyroo_sb_url") || cfg.supabaseUrl || "").trim();
+      const sbKey = (localStorage.getItem("cyroo_sb_key") || cfg.supabaseAnonKey || "").trim();
+      const isConfigured = !!(sbUrl && sbUrl.includes(".supabase.co") && sbKey && sbKey !== "your-anon-key");
+      return {
+        isConfigured,
+        isConnected: !!sbClient,
+        url: sbUrl || "",
+        anonKey: sbKey || ""
+      };
+    },
+
+    setCloudCredentials(url, key) {
+      if (url && url.trim()) localStorage.setItem("cyroo_sb_url", url.trim());
+      else localStorage.removeItem("cyroo_sb_url");
+      if (key && key.trim()) localStorage.setItem("cyroo_sb_key", key.trim());
+      else localStorage.removeItem("cyroo_sb_key");
+
+      initClient();
+      return !!sbClient;
+    },
+
+    async syncAllToCloud() {
+      if (!sbClient) throw new Error("Supabase Cloud is not connected. Please save valid Supabase credentials first.");
+      
+      const dests = LocalDB.get('destinations', cfg.seedDestinations);
+      let destCount = 0;
+      for (const d of dests) {
+        await this.saveDestination(d);
+        destCount++;
+      }
+
+      const pkgs = LocalDB.get('packages', cfg.seedPackages);
+      let pkgCount = 0;
+      for (const p of pkgs) {
+        await this.savePackage(p);
+        pkgCount++;
+      }
+
+      return { destinations: destCount, packages: pkgCount };
     }
   };
 })(window);

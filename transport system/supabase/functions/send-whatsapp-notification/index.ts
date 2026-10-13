@@ -38,7 +38,7 @@ Deno.serve(async (req: Request) => {
       `Package:\n${package_name || 'Safari Package'}\n\n` +
       `Travel Date:\n${travel_date || 'N/A'}\n\n` +
       `Airport Service:\n${airport_service || 'No Airport Transfer'}\n\n` +
-      `Total:\nKES ${Number(total_amount || 0).toLocaleString()}\n\n` +
+      `Total:\n$${Number(total_amount || 0).toLocaleString()}\n\n` +
       `Status:\nPending\n\n` +
       `Please login to the admin dashboard to review the booking.`;
 

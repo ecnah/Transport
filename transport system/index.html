@@ -30,8 +30,8 @@
 
 <body>
 
-  <!-- Top Info Bar -->
-  <div class="top-bar">
+  <!-- Top Info Bar (Desktop Only) -->
+  <div class="top-bar desktop-only">
     <div class="container top-bar-content">
       <div class="top-info">
         <div class="top-info-item"><i class="fas fa-phone text-gold"></i> <a href="tel:0726072607">0726072607</a> / <a
@@ -41,7 +41,7 @@
       </div>
       <div class="top-info">
         <div class="top-info-item"><i class="fas fa-plane-arrival text-gold"></i> JKIA & Wilson Airport Transfers
-          Available</div>
+            Available</div>
         <div class="top-info-item"><a href="admin.html" style="color:var(--gold-accent); font-weight:700;"><i
               class="fas fa-lock"></i> Admin Portal</a></div>
       </div>
@@ -52,22 +52,37 @@
   <header class="header">
     <div class="container nav-container">
       <a href="#home" class="logo">
-        <img src="assets/1-removebg-preview.png" alt="CYROO TOURS & SAFARI" class="brand-logo-img" style="height:85px; max-height:95px;">
+        <img src="assets/1-removebg-preview.png" alt="CYROO TOURS & SAFARI" class="brand-logo-img">
       </a>
 
+      <div class="nav-overlay" id="navOverlay" onclick="closeMobileNav()"></div>
+
       <nav class="nav-menu" id="navMenu">
-        <a href="#home" class="nav-link active">Home</a>
-        <a href="#packages" class="nav-link">Safari Packages</a>
-        <a href="#destinations" class="nav-link">Destinations</a>
-        <a href="#about" class="nav-link">About Us</a>
-        <a href="#book" class="nav-link">Book a Safari</a>
-        <a href="#my-booking" class="nav-link">My Booking</a>
-        <a href="#contact" class="nav-link">Contact Us</a>
+        <div class="nav-drawer-header">
+          <img src="assets/1-removebg-preview.png" alt="CYROO TOURS & SAFARI" class="nav-drawer-logo">
+          <button class="nav-drawer-close" id="navDrawerClose" onclick="closeMobileNav()" aria-label="Close Menu">&times;</button>
+        </div>
+
+        <div class="nav-drawer-links">
+          <a href="#home" class="nav-link active"><i class="fas fa-home"></i> <span>Home</span></a>
+          <a href="#packages" class="nav-link"><i class="fas fa-compass"></i> <span>Safari Packages</span></a>
+          <a href="#destinations" class="nav-link"><i class="fas fa-map-marked-alt"></i> <span>Destinations</span></a>
+          <a href="#about" class="nav-link"><i class="fas fa-info-circle"></i> <span>About Us</span></a>
+          <a href="#book" class="nav-link"><i class="fas fa-calendar-check"></i> <span>Book a Safari</span></a>
+          <a href="#my-booking" class="nav-link"><i class="fas fa-search-location"></i> <span>Track Booking</span></a>
+          <a href="#contact" class="nav-link"><i class="fas fa-envelope"></i> <span>Contact Us</span></a>
+        </div>
+
+        <div class="nav-drawer-footer">
+          <a href="tel:0726072607" class="btn btn-outline-gold btn-sm nav-drawer-btn"><i class="fas fa-phone"></i> Call: 0726072607</a>
+          <button class="btn btn-whatsapp btn-sm nav-drawer-btn" onclick="openQuickWhatsAppBooking()"><i class="fab fa-whatsapp"></i> WhatsApp Booking</button>
+          <a href="admin.html" class="nav-drawer-admin-link"><i class="fas fa-lock text-gold"></i> Staff / Admin Portal</a>
+        </div>
       </nav>
 
       <div class="nav-actions">
-        <a href="#book" class="btn btn-gold btn-sm"><i class="fas fa-calendar-check"></i> Book Now</a>
-        <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle Navigation"><i
+        <a href="#book" class="btn btn-gold btn-sm desktop-only"><i class="fas fa-calendar-check"></i> Book Now</a>
+        <button class="mobile-toggle phone-only" id="mobileToggle" aria-label="Toggle Navigation"><i
             class="fas fa-bars"></i></button>
       </div>
     </div>
@@ -260,13 +275,12 @@
           </div>
 
           <!-- Package Filter Categories -->
-          <div style="display:flex; justify-content:center; gap:0.75rem; margin-bottom:3rem; flex-wrap:wrap;">
-            <button class="btn btn-gold btn-sm pkg-filter-btn active" data-cat="all">All Packages</button>
-            <button class="btn btn-outline-gold btn-sm pkg-filter-btn" data-cat="Safari Parks">Safari Parks</button>
-            <button class="btn btn-outline-gold btn-sm pkg-filter-btn" data-cat="Mount Kenya">Mount Kenya</button>
-            <button class="btn btn-outline-gold btn-sm pkg-filter-btn" data-cat="Day Excursions">Day Excursions</button>
-            <button class="btn btn-outline-gold btn-sm pkg-filter-btn" data-cat="Airport Services"><i
-                class="fas fa-plane"></i> Airport Services</button>
+          <div class="packages-filter">
+            <button class="pkg-filter-btn active" data-cat="all">All Packages</button>
+            <button class="pkg-filter-btn" data-cat="Safari Parks">Safari Parks</button>
+            <button class="pkg-filter-btn" data-cat="Mount Kenya">Mount Kenya</button>
+            <button class="pkg-filter-btn" data-cat="Day Excursions">Day Excursions</button>
+            <button class="pkg-filter-btn" data-cat="Airport Services"><i class="fas fa-plane"></i> Airport Services</button>
           </div>
 
           <!-- Populated by JavaScript -->
@@ -413,11 +427,11 @@
                     <label class="form-label" for="bookingSafariAirportAddon"><i class="fas fa-taxi text-gold"></i> Optional Airport Transfer Add-On</label>
                     <select id="bookingSafariAirportAddon" class="form-select">
                       <option value="No Airport Transfer" data-fee="0">No Airport Add-On Needed</option>
-                      <option value="JKIA Airport Arrival Pickup & Hotel Transfer" data-fee="3000">JKIA Airport Arrival Pickup (+ KES 3,000)</option>
-                      <option value="Nairobi Hotel to JKIA Drop-off" data-fee="3000">JKIA Departure Drop-off (+ KES 3,000)</option>
-                      <option value="Both JKIA Pickup & Drop-off Transfer" data-fee="5500">Both JKIA Pickup & Drop-off (+ KES 5,500)</option>
-                      <option value="Wilson Airport Safari Bush Flight Connection" data-fee="2500">Wilson Airport Safari Connection (+ KES 2,500)</option>
-                      <option value="VIP Chauffeur Airport Service" data-fee="8000">VIP Luxury Executive Airport Chauffeur (+ KES 8,000)</option>
+                      <option value="JKIA Airport Arrival Pickup & Hotel Transfer" data-fee="30">JKIA Airport Arrival Pickup (+ $30)</option>
+                      <option value="Nairobi Hotel to JKIA Drop-off" data-fee="30">JKIA Departure Drop-off (+ $30)</option>
+                      <option value="Both JKIA Pickup & Drop-off Transfer" data-fee="55">Both JKIA Pickup & Drop-off (+ $55)</option>
+                      <option value="Wilson Airport Safari Bush Flight Connection" data-fee="25">Wilson Airport Safari Connection (+ $25)</option>
+                      <option value="VIP Chauffeur Airport Service" data-fee="80">VIP Luxury Executive Airport Chauffeur (+ $80)</option>
                     </select>
                   </div>
                 </div>
@@ -446,7 +460,7 @@
                       <select id="bookingTransport" class="form-select">
                         <option value="Executive Airport Sedan / SUV">Executive Airport Sedan / SUV</option>
                         <option value="4x4 Safari Landcruiser">4x4 Safari Landcruiser (Pop-Up Roof)</option>
-                        <option value="4x4 Landcruiser VIP Edition">4x4 Landcruiser VIP (+ KES 15,000)</option>
+                        <option value="4x4 Landcruiser VIP Edition">4x4 Landcruiser VIP (+ $150)</option>
                         <option value="Customized Safari Tour Van">Customized Safari Tour Van</option>
                       </select>
                     </div>
@@ -470,8 +484,8 @@
                     placeholder="e.g. Flight arrival number KQ 101 at 06:00 AM, extra luggage space, honeymoon setup..."></textarea>
                 </div>
 
-                <button type="submit" class="btn btn-gold" style="width:100%; font-size:1.1rem; padding:1rem; margin-top:1rem;"><i
-                    class="fas fa-check-circle"></i> Confirm & Generate Invoice</button>
+                <button type="submit" id="bookingSubmitBtn" class="btn btn-gold" style="width:100%; font-size:1.1rem; padding:1rem; margin-top:1rem;"><i
+                    class="fas fa-check-circle"></i> Confirm & Generate Invoice (<span id="submitBtnTotal">$0</span>)</button>
               </form>
             </div>
 
@@ -485,11 +499,11 @@
               </div>
               <div class="summary-row">
                 <span style="color:var(--warm-beige-dark);">Adults Charge:</span>
-                <span id="summaryAdults">0 x KES 0</span>
+                <span id="summaryAdults">0 x $0</span>
               </div>
               <div class="summary-row">
                 <span style="color:var(--warm-beige-dark);">Children Charge:</span>
-                <span id="summaryChildren">0 x KES 0</span>
+                <span id="summaryChildren">0 x $0</span>
               </div>
               <div class="summary-row">
                 <span style="color:var(--warm-beige-dark);">Airport Service:</span>
@@ -501,7 +515,7 @@
               </div>
               <div class="summary-row total">
                 <span>Total Payable:</span>
-                <span id="summaryTotal">KES 0</span>
+                <span id="summaryTotal">$0</span>
               </div>
 
               <div
@@ -690,6 +704,32 @@
       </div>
     </div>
   </footer>
+
+  <!-- MOBILE BOTTOM APP NAVIGATION BAR (Smartphones <= 768px) -->
+  <nav class="mobile-bottom-nav phone-only" id="mobileBottomNav">
+    <a href="#home" class="mobile-bottom-item active" data-target="home">
+      <i class="fas fa-home"></i>
+      <span>Home</span>
+    </a>
+    <a href="#packages" class="mobile-bottom-item" data-target="packages">
+      <i class="fas fa-compass"></i>
+      <span>Safaris</span>
+    </a>
+    <a href="#book" class="mobile-bottom-item book-now-item" data-target="book">
+      <div class="bottom-item-fab">
+        <i class="fas fa-calendar-plus"></i>
+      </div>
+      <span>Book</span>
+    </a>
+    <a href="#my-booking" class="mobile-bottom-item" data-target="my-booking">
+      <i class="fas fa-search-location"></i>
+      <span>Tracker</span>
+    </a>
+    <a href="javascript:void(0)" class="mobile-bottom-item" onclick="openQuickWhatsAppBooking()">
+      <i class="fab fa-whatsapp" style="color:#25d366;"></i>
+      <span>WhatsApp</span>
+    </a>
+  </nav>
 
   <!-- Scripts -->
   <script src="js/config.js"></script>

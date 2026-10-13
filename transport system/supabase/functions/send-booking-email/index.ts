@@ -44,7 +44,7 @@ Deno.serve(async (req: Request) => {
           <p>Dear ${customer_name},</p>
           <p>We have received your booking request for <strong>${package_name}</strong> starting on <strong>${travel_date}</strong>.</p>
           <p><strong>Booking Reference:</strong> ${booking_reference}<br>
-          <strong>Total Amount:</strong> KES ${Number(total_amount).toLocaleString()}</p>
+          <strong>Total Amount:</strong> $${Number(total_amount).toLocaleString()}</p>
           <p>Our team will contact you shortly to confirm your itinerary and payment instructions.</p>
           <p>Best regards,<br>Cyroo Tours & Safari Team<br>Phone: 0726072607 / 0733185018</p>
         `
